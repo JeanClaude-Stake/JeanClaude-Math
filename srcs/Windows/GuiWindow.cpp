@@ -1,6 +1,7 @@
 #include "GuiWindow.hpp"
 #include "ModeManager.hpp"
 #include "ModeEditor.hpp"
+#include "EventEditor.hpp"
 #include "StatisticsWindow.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -73,6 +74,7 @@ void	GuiWindow::run(void)
 {
 	ModeManager			modeManager;
 	ModeEditor			editor;
+	EventEditor			eventEditor;
 	StatisticsWindow	statsWindow;
 
 	modeManager.addDefaultMode();
@@ -81,9 +83,23 @@ void	GuiWindow::run(void)
 	{
 		beginFrame();
 		editor.render(modeManager, _window);
+		if (eventEditor.isOpen())
+			eventEditor.render(modeManager.getEventManager());
 		statsWindow.render(modeManager);
+		renderEventsButton(eventEditor);
 		endFrame();
 	}
+}
+
+void	GuiWindow::renderEventsButton(EventEditor &eventEditor)
+{
+	ImGui::SetNextWindowPos(ImVec2(420, 10), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(200, 60), ImGuiCond_FirstUseEver);
+	ImGui::Begin("Events", NULL, ImGuiWindowFlags_NoCollapse);
+	if (ImGui::Button("Open Event Editor", ImVec2(-1, 30)))
+		eventEditor.open();
+	ImGui::Text("Events: %zu", 0UL);
+	ImGui::End();
 }
 
 void	GuiWindow::beginFrame(void)

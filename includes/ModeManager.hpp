@@ -4,6 +4,7 @@
 # include <vector>
 # include <string>
 # include "Distribution.hpp"
+# include "EventManager.hpp"
 
 struct MultiplierEntry
 {
@@ -43,6 +44,7 @@ class ModeManager
 		void						addDefaultMode(void);
 		void						removeLastMode(void);
 		void						runAllSimulations(int numSimulations);
+		void						runAllSimulationsWithEvents(int numSimulations);
 		bool						exportFiles(const char *outputDir);
 
 		std::vector<ModeEntry>&		getModes(void);
@@ -50,9 +52,13 @@ class ModeManager
 		size_t						getModeCount(void) const;
 		const Distribution&			getDistribution(void) const;
 
+		EventManager&				getEventManager(void);
+		const EventManager&			getEventManager(void) const;
+
 	private:
 		std::vector<ModeEntry>		_modes;
 		Distribution				_dist;
+		EventManager				_eventManager;
 };
 
 #endif

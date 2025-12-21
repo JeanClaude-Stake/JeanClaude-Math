@@ -68,6 +68,36 @@ void	Distribution::runSimulations(const std::string &mode,
 		sim.id = i;
 		sim.weight = 1;
 		sim.payoutMultiplier = pickMultiplier(_modes[mode], rng);
+		sim.events.clear();
+		_modes[mode].simulations.push_back(sim);
+	}
+}
+
+void	Distribution::runSimulationsWithEvents(const std::string &mode,
+		size_t count, uint64_t seed, const EventManager &eventMgr)
+{
+	std::mt19937_64					rng(seed);
+	Simulation						sim;
+	std::vector<Event>				triggered;
+
+	if (_modes.find(mode) == _modes.end())
+		return ;
+	_modes[mode].simulations.clear();
+	_modes[mode].simulations.reserve(count);
+	for (size_t i = 0; i < count; i++)
+	{
+		sim.id = i;
+		sim.weight = 1;
+		sim.payoutMultiplier = pickMultiplier(_modes[mode], rng);
+		sim.events.clear();
+		triggered = eventMgr.getTriggeredEvents(static_cast<int>(i), "", "");
+		for (const auto &event : triggered)
+		{
+			SimulationEvent	simEvent;
+			simEvent.eventId = event.getId();
+			simEvent.rtpBoost = event.getModifiers().rtpBoost;
+			sim.events.push_back(simEvent);
+		}
 		_modes[mode].simulations.push_back(sim);
 	}
 }
@@ -219,6 +249,38 @@ double	Distribution::getMaxPayout(const std::string &mode) const
 	return (maxVal);
 }
 
+void	Distribution::setEventManager(const EventManager &eventMgr)
+{
+	_eventManager = eventMgr;
+}
+
+const EventManager&	Distribution::getEventManager(void) const
+{
+	return (_eventManager);
+}
+
+EventManager&	Distribution::getEventManager(void)
+{
+	return (_eventManager);
+}
+
+std::string	Distribution::formatSimulationEvents(
+		const std::vector<SimulationEvent> &events) const
+{
+	std::string	result;
+
+	result = "[";
+	for (size_t i = 0; i < events.size(); i++)
+	{
+		if (i > 0)
+			result += ",";
+		result += "{\"id\":\"" + events[i].eventId + "\"";
+		result += ",\"rtpBoost\":" + std::to_string(events[i].rtpBoost) + "}";
+	}
+	result += "]";
+	return (result);
+}
+
 bool	Distribution::exportCSV(const std::string &path,
 		const GameMode &mode) const
 {
@@ -244,11 +306,13 @@ bool	Distribution::exportJSONLCompressed(const std::string &path,
 {
 	std::string	jsonData;
 	std::string	line;
+	std::string	eventsJson;
 
 	for (size_t i = 0; i < mode.simulations.size(); i++)
 	{
+		eventsJson = formatSimulationEvents(mode.simulations[i].events);
 		line = "{\"id\":" + std::to_string(mode.simulations[i].id)
-			 + ",\"events\":[]"
+			 + ",\"events\":" + eventsJson
 			 + ",\"payoutMultiplier\":"
 			 + std::to_string(mode.simulations[i].payoutMultiplier)
 			 + "}\n";
@@ -279,6 +343,20 @@ bool	Distribution::exportJSONLCompressed(const std::string &path,
 	return (true);
 }
 
+bool	Distribution::exportEventsJSON(const std::string &path) const
+{
+	std::ofstream	file(path);
+
+	if (!file.is_open())
+	{
+		std::cerr << "Error: cannot open " << path << std::endl;
+		return (false);
+	}
+	file << _eventManager.toJSON();
+	file.close();
+	return (true);
+}
+
 bool	Distribution::exportIndex(const std::string &path) const
 {
 	std::ofstream								file(path);
@@ -291,6 +369,9 @@ bool	Distribution::exportIndex(const std::string &path) const
 		return (false);
 	}
 	file << "{\n";
+	file << "  \"version\": \"1.0\",\n";
+	file << "  \"generator\": \"JeanClaude-Math\",\n";
+	file << "  \"eventsConfig\": \"events.json\",\n";
 	file << "  \"modes\": [\n";
 	first = true;
 	for (it = _modes.begin(); it != _modes.end(); ++it)
@@ -301,7 +382,7 @@ bool	Distribution::exportIndex(const std::string &path) const
 		file << "      \"name\": \"" << it->second.name << "\",\n";
 		file << "      \"cost\": " << std::fixed << std::setprecision(1)
 			 << it->second.cost << ",\n";
-		file << "      \"events\": \"books_" << it->second.name << ".jsonl.zst\",\n";
+		file << "      \"simulations\": \"books_" << it->second.name << ".jsonl.zst\",\n";
 		file << "      \"weights\": \"lookUpTable_" << it->second.name << ".csv\"\n";
 		file << "    }";
 		first = false;
@@ -317,6 +398,7 @@ bool	Distribution::exportAll(const std::string &outputDir) const
 	std::map<std::string, GameMode>::const_iterator	it;
 	std::string										csvPath;
 	std::string										jsonlPath;
+	std::string										eventsPath;
 
 	for (it = _modes.begin(); it != _modes.end(); ++it)
 	{
@@ -330,6 +412,10 @@ bool	Distribution::exportAll(const std::string &outputDir) const
 		std::cout << "    CSV: " << csvPath << std::endl;
 		std::cout << "    JSONL: " << jsonlPath << std::endl;
 	}
+	eventsPath = outputDir + "/events.json";
+	if (!exportEventsJSON(eventsPath))
+		return (false);
+	std::cout << "  Events: " << eventsPath << std::endl;
 	if (!exportIndex(outputDir + "/index.json"))
 		return (false);
 	std::cout << "  Index: " << outputDir << "/index.json" << std::endl;
