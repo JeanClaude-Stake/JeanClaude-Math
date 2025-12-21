@@ -4,7 +4,7 @@ NAME_GUI	= math-engine-gui
 CXX			= c++
 CXXFLAGS	= -Wall -Wextra -Werror -std=c++17
 
-INCLUDES	= -I includes -I libs/imgui
+INCLUDES	= -I includes -I libs/imgui -I includes/Windows
 
 SRCS_DIR	= srcs
 SRCS		= main.cpp \
