@@ -18,7 +18,7 @@ SRCS_GUI	= gui_main.cpp \
 			  $(SRCS_DIR)/EventManager.cpp \
 			  $(SRCS_DIR)/ModeManager.cpp \
 			  $(SRCS_DIR)/ModeEditor.cpp \
-			  $(SRCS_DIR)/EventEditor.cpp \
+			  $(SRCS_DIR)/Windows/EventEditor.cpp \
 			  $(SRCS_DIR)/Windows/GuiWindow.cpp \
 			  $(SRCS_DIR)/Windows/StatisticsWindow.cpp
 
@@ -37,7 +37,7 @@ OBJS_GUI	= $(OBJS_DIR)/gui_main.o \
 			  $(OBJS_DIR)/EventManager.o \
 			  $(OBJS_DIR)/ModeManager.o \
 			  $(OBJS_DIR)/ModeEditor.o \
-			  $(OBJS_DIR)/EventEditor.o \
+			  $(OBJS_DIR)/Windows/EventEditor.o \
 			  $(OBJS_DIR)/Windows/GuiWindow.o \
 			  $(OBJS_DIR)/Windows/StatisticsWindow.o
 OBJS_IMGUI	= $(IMGUI_SRCS:libs/imgui/%.cpp=$(OBJS_DIR)/imgui_%.o)
