@@ -46,6 +46,14 @@ class Distribution
 		size_t		simulationCount(const std::string &mode) const;
 		double		getRTP(const std::string &mode) const;
 
+		double		getMeanPayout(const std::string &mode) const;
+		double		getVariance(const std::string &mode) const;
+		double		getStandardDeviation(const std::string &mode) const;
+		double		getVolatility(const std::string &mode) const;
+		double		getHitFrequency(const std::string &mode) const;
+		double		getMinPayout(const std::string &mode) const;
+		double		getMaxPayout(const std::string &mode) const;
+
 		bool		exportAll(const std::string &outputDir) const;
 
 	private:

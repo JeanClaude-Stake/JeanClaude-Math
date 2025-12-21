@@ -19,6 +19,7 @@ void	ModeManager::addDefaultMode(void)
 	mode.simulated = false;
 	mode.rtp = 0.0;
 	mode.simCount = 0;
+	mode.stats.calculated = false;
 	mode.multipliers.push_back({0.0f, 350});
 	mode.multipliers.push_back({1.0f, 200});
 	mode.multipliers.push_back({2.0f, 100});
@@ -49,6 +50,14 @@ void	ModeManager::runAllSimulations(int numSimulations)
 		mode.rtp = _dist.getRTP(mode.name);
 		mode.simCount = _dist.simulationCount(mode.name);
 		mode.simulated = true;
+		mode.stats.calculated = true;
+		mode.stats.meanPayout = _dist.getMeanPayout(mode.name);
+		mode.stats.variance = _dist.getVariance(mode.name);
+		mode.stats.stdDeviation = _dist.getStandardDeviation(mode.name);
+		mode.stats.volatility = _dist.getVolatility(mode.name);
+		mode.stats.hitFrequency = _dist.getHitFrequency(mode.name);
+		mode.stats.minPayout = _dist.getMinPayout(mode.name);
+		mode.stats.maxPayout = _dist.getMaxPayout(mode.name);
 	}
 }
 

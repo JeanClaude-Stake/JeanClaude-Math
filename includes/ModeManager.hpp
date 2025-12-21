@@ -11,6 +11,18 @@ struct MultiplierEntry
 	int			weight;
 };
 
+struct StatisticsCache
+{
+	bool	calculated;
+	double	meanPayout;
+	double	variance;
+	double	stdDeviation;
+	double	volatility;
+	double	hitFrequency;
+	double	minPayout;
+	double	maxPayout;
+};
+
 struct ModeEntry
 {
 	char						name[64];
@@ -19,6 +31,7 @@ struct ModeEntry
 	bool						simulated;
 	double						rtp;
 	size_t						simCount;
+	StatisticsCache				stats;
 };
 
 class ModeManager

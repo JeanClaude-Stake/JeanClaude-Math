@@ -1,6 +1,7 @@
 #include "GuiWindow.hpp"
 #include "ModeManager.hpp"
 #include "ModeEditor.hpp"
+#include "StatisticsWindow.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -41,7 +42,7 @@ bool	GuiWindow::initGLFW(void)
 
 bool	GuiWindow::createWindow(void)
 {
-	_window = glfwCreateWindow(1280, 720, "JeanClaude Math", NULL, NULL);
+	_window = glfwCreateWindow(1480, 820, "JeanClaude Math", NULL, NULL);
 	if (!_window)
 	{
 		glfwTerminate();
@@ -70,8 +71,9 @@ void	GuiWindow::initImGui(void)
 
 void	GuiWindow::run(void)
 {
-	ModeManager	modeManager;
-	ModeEditor	editor;
+	ModeManager			modeManager;
+	ModeEditor			editor;
+	StatisticsWindow	statsWindow;
 
 	modeManager.addDefaultMode();
 
@@ -79,6 +81,7 @@ void	GuiWindow::run(void)
 	{
 		beginFrame();
 		editor.render(modeManager, _window);
+		statsWindow.render(modeManager);
 		endFrame();
 	}
 }
@@ -98,7 +101,7 @@ void	GuiWindow::endFrame(void)
 	int	displayW, displayH;
 	glfwGetFramebufferSize(_window, &displayW, &displayH);
 	glViewport(0, 0, displayW, displayH);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.2f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.6f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

@@ -14,7 +14,8 @@ SRCS_GUI	= gui_main.cpp \
 			  $(SRCS_DIR)/Distribution.cpp \
 			  $(SRCS_DIR)/ModeManager.cpp \
 			  $(SRCS_DIR)/ModeEditor.cpp \
-			  $(SRCS_DIR)/GuiWindow.cpp
+			  $(SRCS_DIR)/Windows/GuiWindow.cpp \
+			  $(SRCS_DIR)/Windows/StatisticsWindow.cpp
 
 IMGUI_SRCS	= libs/imgui/imgui.cpp \
 			  libs/imgui/imgui_draw.cpp \
@@ -29,7 +30,8 @@ OBJS_GUI	= $(OBJS_DIR)/gui_main.o \
 			  $(OBJS_DIR)/Distribution.o \
 			  $(OBJS_DIR)/ModeManager.o \
 			  $(OBJS_DIR)/ModeEditor.o \
-			  $(OBJS_DIR)/GuiWindow.o
+			  $(OBJS_DIR)/Windows/GuiWindow.o \
+			  $(OBJS_DIR)/Windows/StatisticsWindow.o
 OBJS_IMGUI	= $(IMGUI_SRCS:libs/imgui/%.cpp=$(OBJS_DIR)/imgui_%.o)
 
 LIBS		= -lzstd
@@ -47,14 +49,17 @@ $(NAME_GUI): $(OBJS_GUI) $(OBJS_IMGUI)
 
 $(OBJS_DIR)/%.o: $(SRCS_DIR)/%.cpp
 	@mkdir -p $(OBJS_DIR)
+	@mkdir -p $(OBJS_DIR)/Windows
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 $(OBJS_DIR)/gui_main.o: gui_main.cpp
 	@mkdir -p $(OBJS_DIR)
+	@mkdir -p $(OBJS_DIR)/Windows
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 $(OBJS_DIR)/imgui_%.o: libs/imgui/%.cpp
 	@mkdir -p $(OBJS_DIR)
+	@mkdir -p $(OBJS_DIR)/Windows
 	$(CXX) -std=c++17 $(INCLUDES) -c $< -o $@
 
 clean:

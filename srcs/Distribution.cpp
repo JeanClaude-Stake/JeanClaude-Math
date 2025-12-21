@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <cmath>
 
 Distribution::Distribution(void)
 {
@@ -104,6 +105,118 @@ double	Distribution::getRTP(const std::string &mode) const
 		totalWeight += it->second.simulations[i].weight;
 	}
 	return (totalPayout / totalWeight);
+}
+
+double	Distribution::getMeanPayout(const std::string &mode) const
+{
+	std::map<std::string, GameMode>::const_iterator	it;
+	double											sum;
+	size_t											count;
+
+	it = _modes.find(mode);
+	if (it == _modes.end() || it->second.simulations.empty())
+		return (0.0);
+	sum = 0.0;
+	count = it->second.simulations.size();
+	for (size_t i = 0; i < count; i++)
+		sum += it->second.simulations[i].payoutMultiplier / 100.0;
+	return (sum / count);
+}
+
+double	Distribution::getVariance(const std::string &mode) const
+{
+	std::map<std::string, GameMode>::const_iterator	it;
+	double											mean;
+	double											sumSquaredDiff;
+	double											payout;
+	size_t											count;
+
+	it = _modes.find(mode);
+	if (it == _modes.end() || it->second.simulations.empty())
+		return (0.0);
+	mean = getMeanPayout(mode);
+	sumSquaredDiff = 0.0;
+	count = it->second.simulations.size();
+	for (size_t i = 0; i < count; i++)
+	{
+		payout = it->second.simulations[i].payoutMultiplier / 100.0;
+		sumSquaredDiff += (payout - mean) * (payout - mean);
+	}
+	return (sumSquaredDiff / count);
+}
+
+double	Distribution::getStandardDeviation(const std::string &mode) const
+{
+	return (std::sqrt(getVariance(mode)));
+}
+
+double	Distribution::getVolatility(const std::string &mode) const
+{
+	double	mean;
+	double	stdDev;
+
+	mean = getMeanPayout(mode);
+	if (mean < 0.0001)
+		return (0.0);
+	stdDev = getStandardDeviation(mode);
+	return (stdDev / mean);
+}
+
+double	Distribution::getHitFrequency(const std::string &mode) const
+{
+	std::map<std::string, GameMode>::const_iterator	it;
+	size_t											winCount;
+	size_t											count;
+
+	it = _modes.find(mode);
+	if (it == _modes.end() || it->second.simulations.empty())
+		return (0.0);
+	winCount = 0;
+	count = it->second.simulations.size();
+	for (size_t i = 0; i < count; i++)
+	{
+		if (it->second.simulations[i].payoutMultiplier > 0)
+			winCount++;
+	}
+	return ((double)winCount / count * 100.0);
+}
+
+double	Distribution::getMinPayout(const std::string &mode) const
+{
+	std::map<std::string, GameMode>::const_iterator	it;
+	double											minVal;
+	double											payout;
+
+	it = _modes.find(mode);
+	if (it == _modes.end() || it->second.simulations.empty())
+		return (0.0);
+	minVal = it->second.simulations[0].payoutMultiplier / 100.0;
+	for (size_t i = 1; i < it->second.simulations.size(); i++)
+	{
+		payout = it->second.simulations[i].payoutMultiplier / 100.0;
+		if (payout < minVal)
+			minVal = payout;
+	}
+	return (minVal);
+}
+
+double	Distribution::getMaxPayout(const std::string &mode) const
+{
+	std::map<std::string, GameMode>::const_iterator	it;
+	double											maxVal;
+	double											payout;
+
+	it = _modes.find(mode);
+	if (it == _modes.end() || it->second.simulations.empty())
+		return (0.0);
+	maxVal = it->second.simulations[0].payoutMultiplier / 100.0;
+	for (size_t i = 1; i < it->second.simulations.size(); i++)
+	{
+		payout = it->second.simulations[i].payoutMultiplier / 100.0;
+		if (payout > maxVal)
+			maxVal = payout;
+	}
+	return (maxVal);
 }
 
 bool	Distribution::exportCSV(const std::string &path,
