@@ -23,9 +23,11 @@ Currently, the tool supports:
 - ✅ Define multipliers with their respective weights
 - ✅ Generate random simulations (weighted distribution)
 - ✅ Automatically calculate RTP (Return to Player)
+- ✅ Advanced statistical analysis (variance, standard deviation, volatility, hit frequency)
 - ✅ Export results in CSV and compressed JSONL (zstd)
 - ✅ Command Line Interface (CLI)
 - ✅ Graphical User Interface (GUI) with ImGui
+- ✅ Dedicated statistics window for detailed analysis
 
 ## Prerequisites
 
@@ -116,6 +118,32 @@ The graphical interface allows you to:
 - Add/remove multipliers
 - Run simulations in real-time
 - Visualize statistics (RTP, simulation count)
+- View detailed statistics in a dedicated window:
+  - Basic metrics (RTP, Mean Payout, Hit Frequency)
+  - Distribution metrics (Variance, Standard Deviation, Volatility)
+  - Payout range (Min/Max multipliers observed)
+  - Sample information (number of simulations)
+
+## Statistics Explained
+
+The Statistics Window displays comprehensive metrics for each game mode:
+
+### Basic Metrics
+- **RTP (Return to Player)**: Expected payout percentage (e.g., 95.50% means players get back 95.50 cents for every dollar wagered on average)
+- **Mean Payout**: Average multiplier value across all simulations
+- **Hit Frequency**: Percentage of non-zero payouts (winning probability)
+
+### Distribution Metrics
+- **Variance**: Measure of how spread out the payout values are
+- **Standard Deviation (Écart-Type)**: Square root of variance, shows consistency of payouts
+- **Volatility**: Ratio of standard deviation to mean (higher = more risk/reward variability)
+
+### Payout Range
+- **Min Payout**: Lowest multiplier observed in simulations
+- **Max Payout**: Highest multiplier observed in simulations
+
+### Sample Information
+- **Simulations**: Total number of simulations run for this mode
 
 ## Generated Files
 
@@ -169,13 +197,17 @@ JSONL file compressed with zstd (optimized for storage):
 ├── includes/             # Headers (.hpp)
 │   ├── Distribution.hpp  # Main class
 │   ├── ModeManager.hpp   # Mode manager
-│   ├── GuiWindow.hpp     # GUI window
-│   └── ModeEditor.hpp    # Mode editor
+│   ├── ModeEditor.hpp    # Mode editor
+│   └── Windows/          # GUI windows
+│       ├── GuiWindow.hpp       # Main GUI window
+│       └── StatisticsWindow.hpp # Statistics window
 ├── srcs/                 # Implementations (.cpp)
 │   ├── Distribution.cpp
 │   ├── ModeManager.cpp
-│   ├── GuiWindow.cpp
-│   └── ModeEditor.cpp
+│   ├── ModeEditor.cpp
+│   └── Windows/          # GUI windows implementations
+│       ├── GuiWindow.cpp
+│       └── StatisticsWindow.cpp
 ├── libs/                 # External libraries
 │   └── imgui/            # Dear ImGui (graphical interface)
 └── output/               # Generated results (created automatically)
@@ -185,7 +217,8 @@ JSONL file compressed with zstd (optimized for storage):
 
 Upcoming features:
 - [ ] Import/export JSON configurations
-- [x] Advanced statistical analysis (variance, standard deviation)
+- [x] Advanced statistical analysis (variance, standard deviation, volatility, hit frequency)
+- [x] Statistics visualization window in GUI
 - [ ] Automatic RTP validation
 - [ ] Batch mode to test multiple configurations
 - [ ] Tools for creating slot games
