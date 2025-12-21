@@ -185,7 +185,7 @@ JSONL file compressed with zstd (optimized for storage):
 
 Upcoming features:
 - [ ] Import/export JSON configurations
-- [ ] Advanced statistical analysis (variance, standard deviation)
+- [x] Advanced statistical analysis (variance, standard deviation)
 - [ ] Automatic RTP validation
 - [ ] Batch mode to test multiple configurations
 - [ ] Tools for creating slot games
