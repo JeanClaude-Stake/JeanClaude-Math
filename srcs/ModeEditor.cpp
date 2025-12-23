@@ -95,50 +95,69 @@ void	ModeEditor::renderModePanel(ModeEntry &mode, int index)
 
 void	ModeEditor::renderMultipliersTable(ModeEntry &mode)
 {
-	ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Multipliers:");
+	ImGui::Text("Mult");
+	ImGui::SameLine(90);
+	ImGui::Text("Weight");
+	ImGui::SameLine(170);
+	ImGui::Text("Prob");
 
-	if (ImGui::BeginTable("MultTable", 4, ImGuiTableFlags_Borders
-		| ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+	uint64_t	totalWeight = 0;
+	for (const auto &m : mode.multipliers)
+		totalWeight += m.weight;
+	if (totalWeight == 0)
+		totalWeight = 1;
+
+	size_t	toDelete = (size_t)-1;
+
+	for (size_t i = 0; i < mode.multipliers.size(); i++)
 	{
-		ImGui::TableSetupColumn("Mult", ImGuiTableColumnFlags_WidthFixed, 80);
-		ImGui::TableSetupColumn("Weight", ImGuiTableColumnFlags_WidthFixed, 80);
-		ImGui::TableSetupColumn("Prob%", ImGuiTableColumnFlags_WidthFixed, 60);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 30);
-		ImGui::TableHeadersRow();
+		ImGui::PushID(static_cast<int>(i));
 
-		uint64_t	totalWeight = 0;
-		for (const auto &m : mode.multipliers)
-			totalWeight += m.weight;
+		float	currentProb = (mode.multipliers[i].weight * 100.0f) / totalWeight;
 
-		for (size_t i = 0; i < mode.multipliers.size(); i++)
+		ImGui::SetNextItemWidth(70);
+		ImGui::DragFloat("##m", &mode.multipliers[i].multiplier,
+			0.1f, 0.0f, 1000.0f, "%.2fx");
+
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(70);
+		int	oldWeight = mode.multipliers[i].weight;
+		if (ImGui::DragInt("##w", &mode.multipliers[i].weight, 1.0f, 1, 1000000))
 		{
-			ImGui::TableNextRow();
-			ImGui::PushID(static_cast<int>(i));
-
-			ImGui::TableSetColumnIndex(0);
-			ImGui::SetNextItemWidth(-1);
-			ImGui::InputFloat("##mult", &mode.multipliers[i].multiplier,
-				0.0f, 0.0f, "%.2fx");
-
-			ImGui::TableSetColumnIndex(1);
-			ImGui::SetNextItemWidth(-1);
-			ImGui::InputInt("##weight", &mode.multipliers[i].weight, 0, 0);
-
-			ImGui::TableSetColumnIndex(2);
-			float	prob = totalWeight > 0
-				? (mode.multipliers[i].weight * 100.0f / totalWeight) : 0.0f;
-			ImGui::Text("%.1f%%", prob);
-
-			ImGui::TableSetColumnIndex(3);
-			if (ImGui::Button("X") && mode.multipliers.size() > 1)
-				mode.multipliers.erase(mode.multipliers.begin() + i);
-
-			ImGui::PopID();
+			if (mode.multipliers[i].weight < 1)
+				mode.multipliers[i].weight = 1;
 		}
-		ImGui::EndTable();
+
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(70);
+		float	newProb = currentProb;
+		if (ImGui::DragFloat("##p", &newProb, 0.1f, 0.01f, 99.99f, "%.2f%%"))
+		{
+			float	otherWeightsTotal = totalWeight - oldWeight;
+			if (otherWeightsTotal < 1)
+				otherWeightsTotal = 1;
+			if (newProb >= 99.99f)
+				newProb = 99.99f;
+			if (newProb <= 0.01f)
+				newProb = 0.01f;
+			float	newWeight = (newProb * otherWeightsTotal) / (100.0f - newProb);
+			mode.multipliers[i].weight = static_cast<int>(newWeight + 0.5f);
+			if (mode.multipliers[i].weight < 1)
+				mode.multipliers[i].weight = 1;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::SmallButton("X") && mode.multipliers.size() > 1)
+			toDelete = i;
+
+		ImGui::PopID();
 	}
 
-	if (ImGui::Button("+ Add Multiplier", ImVec2(-1, 0)))
+	if (toDelete != (size_t)-1)
+		mode.multipliers.erase(mode.multipliers.begin() + toDelete);
+
+	ImGui::Spacing();
+	if (ImGui::Button("+ Add Multiplier"))
 		mode.multipliers.push_back({0.0f, 100});
 }
 
@@ -174,10 +193,8 @@ void	ModeEditor::renderModesList(ModeManager &modeManager)
 		"Game Modes (%zu)", modeManager.getModeCount());
 	ImGui::Spacing();
 
-	ImGui::BeginChild("ModesList", ImVec2(0, 300), true);
 	for (size_t i = 0; i < modes.size(); i++)
 		renderModePanel(modes[i], static_cast<int>(i));
-	ImGui::EndChild();
 
 	ImGui::Spacing();
 	if (ImGui::Button("+ Add Mode", ImVec2(150, 25)))
