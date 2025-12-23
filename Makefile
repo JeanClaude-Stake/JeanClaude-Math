@@ -8,17 +8,12 @@ INCLUDES	= -I includes -I libs/imgui -I includes/Windows
 
 SRCS_DIR	= srcs
 SRCS		= main.cpp \
-			  $(SRCS_DIR)/Distribution.cpp \
-			  $(SRCS_DIR)/Event.cpp \
-			  $(SRCS_DIR)/EventManager.cpp
+			  $(SRCS_DIR)/Distribution.cpp
 
 SRCS_GUI	= gui_main.cpp \
 			  $(SRCS_DIR)/Distribution.cpp \
-			  $(SRCS_DIR)/Event.cpp \
-			  $(SRCS_DIR)/EventManager.cpp \
 			  $(SRCS_DIR)/ModeManager.cpp \
 			  $(SRCS_DIR)/ModeEditor.cpp \
-			  $(SRCS_DIR)/Windows/EventEditor.cpp \
 			  $(SRCS_DIR)/Windows/GuiWindow.cpp \
 			  $(SRCS_DIR)/Windows/StatisticsWindow.cpp
 
@@ -33,11 +28,8 @@ OBJS_DIR	= objs
 OBJS		= $(SRCS:$(SRCS_DIR)/%.cpp=$(OBJS_DIR)/%.o)
 OBJS_GUI	= $(OBJS_DIR)/gui_main.o \
 			  $(OBJS_DIR)/Distribution.o \
-			  $(OBJS_DIR)/Event.o \
-			  $(OBJS_DIR)/EventManager.o \
 			  $(OBJS_DIR)/ModeManager.o \
 			  $(OBJS_DIR)/ModeEditor.o \
-			  $(OBJS_DIR)/Windows/EventEditor.o \
 			  $(OBJS_DIR)/Windows/GuiWindow.o \
 			  $(OBJS_DIR)/Windows/StatisticsWindow.o
 OBJS_IMGUI	= $(IMGUI_SRCS:libs/imgui/%.cpp=$(OBJS_DIR)/imgui_%.o)
@@ -49,8 +41,12 @@ all: $(NAME)
 
 gui: $(NAME_GUI)
 
-$(NAME): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME) $(LIBS)
+$(OBJS_DIR)/main.o: main.cpp
+	@mkdir -p $(OBJS_DIR)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(NAME): $(OBJS_DIR)/main.o $(OBJS_DIR)/Distribution.o
+	$(CXX) $(CXXFLAGS) $(OBJS_DIR)/main.o $(OBJS_DIR)/Distribution.o -o $(NAME) $(LIBS)
 
 $(NAME_GUI): $(OBJS_GUI) $(OBJS_IMGUI)
 	$(CXX) $(CXXFLAGS) $(OBJS_GUI) $(OBJS_IMGUI) -o $(NAME_GUI) $(LIBS_GUI)

@@ -35,7 +35,6 @@ void	ModeManager::removeLastMode(void)
 void	ModeManager::runAllSimulations(int numSimulations)
 {
 	_dist = Distribution();
-	_dist.setEventManager(_eventManager);
 	for (size_t i = 0; i < _modes.size(); i++)
 	{
 		ModeEntry	&mode = _modes[i];
@@ -48,37 +47,6 @@ void	ModeManager::runAllSimulations(int numSimulations)
 				mode.multipliers[j].weight);
 		}
 		_dist.runSimulations(mode.name, numSimulations, 42 + i);
-		mode.rtp = _dist.getRTP(mode.name);
-		mode.simCount = _dist.simulationCount(mode.name);
-		mode.simulated = true;
-		mode.stats.calculated = true;
-		mode.stats.meanPayout = _dist.getMeanPayout(mode.name);
-		mode.stats.variance = _dist.getVariance(mode.name);
-		mode.stats.stdDeviation = _dist.getStandardDeviation(mode.name);
-		mode.stats.volatility = _dist.getVolatility(mode.name);
-		mode.stats.hitFrequency = _dist.getHitFrequency(mode.name);
-		mode.stats.minPayout = _dist.getMinPayout(mode.name);
-		mode.stats.maxPayout = _dist.getMaxPayout(mode.name);
-	}
-}
-
-void	ModeManager::runAllSimulationsWithEvents(int numSimulations)
-{
-	_dist = Distribution();
-	_dist.setEventManager(_eventManager);
-	for (size_t i = 0; i < _modes.size(); i++)
-	{
-		ModeEntry	&mode = _modes[i];
-
-		_dist.addMode(mode.name, mode.cost);
-		for (size_t j = 0; j < mode.multipliers.size(); j++)
-		{
-			_dist.addMultiplier(mode.name,
-				mode.multipliers[j].multiplier,
-				mode.multipliers[j].weight);
-		}
-		_dist.runSimulationsWithEvents(mode.name, numSimulations,
-			42 + i, _eventManager);
 		mode.rtp = _dist.getRTP(mode.name);
 		mode.simCount = _dist.simulationCount(mode.name);
 		mode.simulated = true;
@@ -119,14 +87,4 @@ size_t	ModeManager::getModeCount(void) const
 const Distribution&	ModeManager::getDistribution(void) const
 {
 	return (_dist);
-}
-
-EventManager&	ModeManager::getEventManager(void)
-{
-	return (_eventManager);
-}
-
-const EventManager&	ModeManager::getEventManager(void) const
-{
-	return (_eventManager);
 }

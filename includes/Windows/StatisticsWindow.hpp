@@ -16,6 +16,8 @@ class StatisticsWindow
 
 		void	renderModeSelector(ModeManager &modeManager);
 		void	renderStatsTable(const ModeEntry &mode);
+		void	renderDistributionChart(const ModeEntry &mode);
+		void	renderRTPBar(const ModeEntry &mode);
 		void	renderNoDataWarning(void);
 };
 

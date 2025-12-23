@@ -3,8 +3,6 @@
 
 # include <GLFW/glfw3.h>
 
-class EventEditor;
-
 class GuiWindow
 {
 	public:
@@ -26,7 +24,6 @@ class GuiWindow
 		void				cleanup(void);
 		void				beginFrame(void);
 		void				endFrame(void);
-		void				renderEventsButton(EventEditor &eventEditor);
 };
 
 #endif
