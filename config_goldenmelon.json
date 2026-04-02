@@ -1,0 +1,26 @@
+{
+  "modes": [
+    {
+      "name": "mode_0",
+      "cost": 1,
+      "freeSpins": {
+        "enabled": false,
+        "triggerWeight": 50,
+        "count": 10,
+        "multiplierBoost": 2,
+        "canRetrigger": false
+      },
+      "multipliers": [
+        { "multiplier": 0, "weight": 285 },
+        { "multiplier": 0.5, "weight": 70 },
+        { "multiplier": 1, "weight": 150 },
+        { "multiplier": 1.5, "weight": 100 },
+        { "multiplier": 2, "weight": 50 },
+        { "multiplier": 2.5, "weight": 30 },
+        { "multiplier": 5, "weight": 15 },
+        { "multiplier": 7, "weight": 7 },
+        { "multiplier": 10, "weight": 3 }
+      ]
+    }
+  ]
+}

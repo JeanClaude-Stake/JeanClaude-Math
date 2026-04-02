@@ -28,15 +28,18 @@ class ModeEditor
 		int					_numSimulations;
 		char				_outputDir[256];
 		bool				_exported;
-		bool				_isSimulating;
 		std::string			_statusMsg;
+
+		char				_configPath[256];
 
 		void				renderHeader(void);
 		void				renderModePanel(ModeEntry &mode, int index);
 		void				renderMultipliersTable(ModeEntry &mode);
+		void				renderFreeSpinsConfig(ModeEntry &mode);
 		void				renderSettings(void);
 		void				renderModesList(ModeManager &modeManager);
 		void				renderActions(ModeManager &modeManager);
+		void				renderConfigActions(ModeManager &modeManager);
 		void				renderExportPreview(const ModeManager &modeManager);
 		void				renderStatus(void);
 };

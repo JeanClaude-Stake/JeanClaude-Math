@@ -45,12 +45,23 @@ int	main(void)
 	dist.addMultiplier("bonus", 50.0, 40);
 	dist.addMultiplier("bonus", 100.0, 10);
 
+	// === MODE FREE SPINS DEMO (cost 1.0) ===
+	dist.addMode("freespins_demo", 1.0);
+	dist.addMultiplier("freespins_demo", 0.0, 300);
+	dist.addMultiplier("freespins_demo", 0.5, 200);
+	dist.addMultiplier("freespins_demo", 1.0, 150);
+	dist.addMultiplier("freespins_demo", 2.0, 80);
+	dist.addMultiplier("freespins_demo", 5.0, 30);
+	// Free spins: trigger weight 40, 10 spins, x2 boost, can retrigger
+	dist.setFreeSpins("freespins_demo", 40, 10, 2.0, true);
+
 	// Lance les simulations
 	std::cout << "Running " << numSimulations << " simulations per mode..."
 			  << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 	dist.runSimulations("base", numSimulations, 42);
 	dist.runSimulations("bonus", numSimulations, 123);
+	dist.runSimulations("freespins_demo", numSimulations, 456);
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>
 		(end - start);
@@ -61,6 +72,7 @@ int	main(void)
 	std::cout << "=== Results ===" << std::endl;
 	printModeStats(dist, "base");
 	printModeStats(dist, "bonus");
+	printModeStats(dist, "freespins_demo");
 	std::cout << std::endl;
 
 	// Export

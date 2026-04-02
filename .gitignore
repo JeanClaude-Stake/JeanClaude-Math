@@ -1,3 +1,5 @@
 objs/
 .claude/
 .vscode/
+*.json
+*.png

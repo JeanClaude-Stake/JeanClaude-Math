@@ -14,17 +14,20 @@ struct MultiplierConfig
 	uint64_t	weight;
 };
 
-// Game event: what happens DURING a single game round
-// Types: "reveal", "winInfo", "setWin", "finalWin"
+// Game event matching Stake Engine format
+// Types: "reveal", "winInfo", "setWin", "setTotalWin", "finalWin"
 struct GameEvent
 {
 	int			index;
-	std::string	type;
-	double		multiplier;
-	int			amount;
+	std::string	type;		// "reveal", "winInfo", "setWin", "setTotalWin", "finalWin"
+	std::string	gameType;	// "basegame" or "freegame" (used in reveal events)
+	int			amount;		// Win amount (for setWin, setTotalWin, finalWin)
+	int			totalWin;	// For winInfo
+	int			winLevel;	// For setWin (win tier for UI animation)
 
 	GameEvent(void);
-	GameEvent(int idx, const std::string &t, double mult, int amt);
+	GameEvent(int idx, const std::string &t, int amt);
+	GameEvent(int idx, const std::string &t, const std::string &gType);
 };
 
 // A single simulation/round result
@@ -33,7 +36,18 @@ struct Simulation
 	uint64_t				id;
 	uint64_t				weight;
 	uint64_t				payoutMultiplier;	// In hundredths: 150 = 1.5x
-	std::vector<GameEvent>	events;				// Game events (reveal, finalWin, etc.)
+	double					baseGameWins;		// Base game RTP portion
+	double					freeGameWins;		// Free game RTP portion
+	std::vector<GameEvent>	events;
+};
+
+struct FreeSpinsMode
+{
+	bool		enabled;
+	uint64_t	triggerWeight;		// Added to totalWeight distribution
+	int			count;				// Number of free spins
+	double		multiplierBoost;	// Multiplier for free spin winnings
+	bool		canRetrigger;
 };
 
 struct GameMode
@@ -43,6 +57,7 @@ struct GameMode
 	std::vector<MultiplierConfig>	multipliers;
 	std::vector<Simulation>			simulations;
 	uint64_t						totalWeight;
+	FreeSpinsMode					freeSpins;
 };
 
 class Distribution
@@ -54,6 +69,9 @@ class Distribution
 		void		addMode(const std::string &name, double cost);
 		void		addMultiplier(const std::string &mode,
 						double multiplier, uint64_t weight);
+		void		setFreeSpins(const std::string &mode,
+						uint64_t triggerWeight, int count,
+						double multiplierBoost, bool canRetrigger);
 		void		runSimulations(const std::string &mode,
 						size_t count, uint64_t seed);
 

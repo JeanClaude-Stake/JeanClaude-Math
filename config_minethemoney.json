@@ -1,0 +1,67 @@
+{
+  "modes": [
+    {
+      "name": "mode_0",
+      "cost": 1,
+      "freeSpins": {
+        "enabled": false,
+        "triggerWeight": 50,
+        "count": 10,
+        "multiplierBoost": 2,
+        "canRetrigger": false
+      },
+      "multipliers": [
+        { "multiplier": 0, "weight": 390 },
+        { "multiplier": 1, "weight": 200 },
+        { "multiplier": 2, "weight": 80 },
+        { "multiplier": 5, "weight": 10 },
+        { "multiplier": 2.5, "weight": 70 },
+        { "multiplier": 1.5, "weight": 100 },
+        { "multiplier": 8, "weight": 5 },
+        { "multiplier": 0.5, "weight": 50 },
+        { "multiplier": 10, "weight": 3 }
+      ]
+    },
+    {
+      "name": "mode_dynamite",
+      "cost": 5,
+      "freeSpins": {
+        "enabled": false,
+        "triggerWeight": 50,
+        "count": 10,
+        "multiplierBoost": 2,
+        "canRetrigger": false
+      },
+      "multipliers": [
+        { "multiplier": 0, "weight": 320 },
+        { "multiplier": 5, "weight": 150 },
+        { "multiplier": 10, "weight": 60 },
+        { "multiplier": 15, "weight": 40 },
+        { "multiplier": 20, "weight": 20 },
+        { "multiplier": 2.5, "weight": 50 },
+        { "multiplier": 25, "weight": 10 },
+        { "multiplier": 50, "weight": 5 }
+      ]
+    },
+    {
+      "name": "mode_gold",
+      "cost": 10,
+      "freeSpins": {
+        "enabled": true,
+        "triggerWeight": 50,
+        "count": 5,
+        "multiplierBoost": 1,
+        "canRetrigger": false
+      },
+      "multipliers": [
+        { "multiplier": 0, "weight": 308 },
+        { "multiplier": 10, "weight": 105 },
+        { "multiplier": 20, "weight": 60 },
+        { "multiplier": 50, "weight": 10 },
+        { "multiplier": 5, "weight": 160 },
+        { "multiplier": 15, "weight": 80 },
+        { "multiplier": 25, "weight": 30 }
+      ]
+    }
+  ]
+}

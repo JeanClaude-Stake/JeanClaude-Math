@@ -6,12 +6,20 @@
 #include <sstream>
 
 GameEvent::GameEvent(void)
-	: index(0), type("reveal"), multiplier(0.0), amount(0)
+	: index(0), type("reveal"), gameType("basegame"), amount(0),
+	  totalWin(0), winLevel(0)
 {
 }
 
-GameEvent::GameEvent(int idx, const std::string &t, double mult, int amt)
-	: index(idx), type(t), multiplier(mult), amount(amt)
+GameEvent::GameEvent(int idx, const std::string &t, int amt)
+	: index(idx), type(t), gameType(""), amount(amt),
+	  totalWin(0), winLevel(0)
+{
+}
+
+GameEvent::GameEvent(int idx, const std::string &t, const std::string &gType)
+	: index(idx), type(t), gameType(gType), amount(0),
+	  totalWin(0), winLevel(0)
 {
 }
 
@@ -30,6 +38,11 @@ void	Distribution::addMode(const std::string &name, double cost)
 	mode.name = name;
 	mode.cost = cost;
 	mode.totalWeight = 0;
+	mode.freeSpins.enabled = false;
+	mode.freeSpins.triggerWeight = 0;
+	mode.freeSpins.count = 0;
+	mode.freeSpins.multiplierBoost = 1.0;
+	mode.freeSpins.canRetrigger = false;
 	_modes[name] = mode;
 }
 
@@ -44,6 +57,19 @@ void	Distribution::addMultiplier(const std::string &mode,
 	config.weight = weight;
 	_modes[mode].multipliers.push_back(config);
 	_modes[mode].totalWeight += weight;
+}
+
+void	Distribution::setFreeSpins(const std::string &mode,
+		uint64_t triggerWeight, int count,
+		double multiplierBoost, bool canRetrigger)
+{
+	if (_modes.find(mode) == _modes.end())
+		return ;
+	_modes[mode].freeSpins.enabled = true;
+	_modes[mode].freeSpins.triggerWeight = triggerWeight;
+	_modes[mode].freeSpins.count = count;
+	_modes[mode].freeSpins.multiplierBoost = multiplierBoost;
+	_modes[mode].freeSpins.canRetrigger = canRetrigger;
 }
 
 uint64_t	Distribution::pickMultiplier(const GameMode &mode,
@@ -64,29 +90,154 @@ uint64_t	Distribution::pickMultiplier(const GameMode &mode,
 	return (0);
 }
 
+// Determine win level based on payout (for setWin events)
+static int	getWinLevel(uint64_t payout)
+{
+	if (payout == 0)
+		return (0);
+	if (payout <= 100)
+		return (1);
+	if (payout <= 500)
+		return (2);
+	if (payout <= 2000)
+		return (3);
+	if (payout <= 10000)
+		return (4);
+	return (5);
+}
+
 void	Distribution::runSimulations(const std::string &mode,
 		size_t count, uint64_t seed)
 {
 	std::mt19937_64	rng(seed);
 	Simulation		sim;
-	double			mult;
 
 	if (_modes.find(mode) == _modes.end())
 		return ;
-	_modes[mode].simulations.clear();
-	_modes[mode].simulations.reserve(count);
+
+	GameMode	&gm = _modes[mode];
+
+	gm.simulations.clear();
+	gm.simulations.reserve(count);
+
+	// Calculate effective total weight (multipliers + free spin trigger)
+	uint64_t	effectiveTotal = gm.totalWeight;
+	if (gm.freeSpins.enabled)
+		effectiveTotal += gm.freeSpins.triggerWeight;
+
 	for (size_t i = 0; i < count; i++)
 	{
 		sim.id = i + 1;
 		sim.weight = 1;
-		sim.payoutMultiplier = pickMultiplier(_modes[mode], rng);
 		sim.events.clear();
-		mult = sim.payoutMultiplier / 100.0;
-		sim.events.push_back(GameEvent(0, "reveal", mult,
-			static_cast<int>(sim.payoutMultiplier)));
-		sim.events.push_back(GameEvent(1, "finalWin", mult,
-			static_cast<int>(sim.payoutMultiplier)));
-		_modes[mode].simulations.push_back(sim);
+		sim.baseGameWins = 0.0;
+		sim.freeGameWins = 0.0;
+
+		// Roll with free spins trigger included in the distribution
+		std::uniform_int_distribution<uint64_t>	dist(0, effectiveTotal - 1);
+		uint64_t	roll = dist(rng);
+
+		// Check if free spins triggered
+		if (gm.freeSpins.enabled && roll >= gm.totalWeight)
+		{
+			// Free spins triggered - base game reveal (trigger spin)
+			uint64_t	totalPayout = 0;
+			int			eventIdx = 0;
+
+			// Base game reveal event (the triggering spin)
+			GameEvent	baseReveal(eventIdx++, "reveal", "basegame");
+			sim.events.push_back(baseReveal);
+
+			// setTotalWin for base game (0 since it's a trigger)
+			GameEvent	baseTotalWin(eventIdx++, "setTotalWin", 0);
+			sim.events.push_back(baseTotalWin);
+
+			// Now run each free spin as freegame reveal + winInfo + setWin
+			int	spinsRemaining = gm.freeSpins.count;
+			while (spinsRemaining > 0)
+			{
+				uint64_t	fsPayout = pickMultiplier(gm, rng);
+				uint64_t	boostedPayout = static_cast<uint64_t>(
+					fsPayout * gm.freeSpins.multiplierBoost);
+
+				// reveal event with gameType "freegame"
+				GameEvent	fsReveal(eventIdx++, "reveal", "freegame");
+				sim.events.push_back(fsReveal);
+
+				if (boostedPayout > 0)
+				{
+					// winInfo
+					GameEvent	winInfo(eventIdx++, "winInfo", static_cast<int>(boostedPayout));
+					winInfo.totalWin = static_cast<int>(boostedPayout);
+					sim.events.push_back(winInfo);
+
+					// setWin
+					GameEvent	setWin(eventIdx++, "setWin", static_cast<int>(boostedPayout));
+					setWin.winLevel = getWinLevel(boostedPayout);
+					sim.events.push_back(setWin);
+				}
+
+				totalPayout += boostedPayout;
+
+				// setTotalWin (cumulative)
+				GameEvent	totalWinEvt(eventIdx++, "setTotalWin",
+					static_cast<int>(totalPayout));
+				sim.events.push_back(totalWinEvt);
+
+				spinsRemaining--;
+
+				// Check retrigger
+				if (gm.freeSpins.canRetrigger)
+				{
+					uint64_t	retriggerRoll = dist(rng);
+					if (retriggerRoll >= gm.totalWeight)
+						spinsRemaining += gm.freeSpins.count;
+				}
+			}
+
+			sim.payoutMultiplier = totalPayout;
+			sim.freeGameWins = totalPayout / 100.0;
+
+			// finalWin
+			GameEvent	finalWin(eventIdx, "finalWin",
+				static_cast<int>(totalPayout));
+			sim.events.push_back(finalWin);
+		}
+		else
+		{
+			// Normal base game round
+			sim.payoutMultiplier = pickMultiplier(gm, rng);
+			int	payout = static_cast<int>(sim.payoutMultiplier);
+			int	eventIdx = 0;
+
+			// reveal
+			GameEvent	reveal(eventIdx++, "reveal", "basegame");
+			sim.events.push_back(reveal);
+
+			if (payout > 0)
+			{
+				// winInfo
+				GameEvent	winInfo(eventIdx++, "winInfo", payout);
+				winInfo.totalWin = payout;
+				sim.events.push_back(winInfo);
+
+				// setWin
+				GameEvent	setWin(eventIdx++, "setWin", payout);
+				setWin.winLevel = getWinLevel(sim.payoutMultiplier);
+				sim.events.push_back(setWin);
+			}
+
+			// setTotalWin
+			GameEvent	totalWinEvt(eventIdx++, "setTotalWin", payout);
+			sim.events.push_back(totalWinEvt);
+
+			// finalWin
+			GameEvent	finalWin(eventIdx, "finalWin", payout);
+			sim.events.push_back(finalWin);
+
+			sim.baseGameWins = sim.payoutMultiplier / 100.0;
+		}
+		gm.simulations.push_back(sim);
 	}
 }
 
@@ -122,7 +273,9 @@ double	Distribution::getRTP(const std::string &mode) const
 			* (it->second.simulations[i].payoutMultiplier / 100.0);
 		totalWeight += it->second.simulations[i].weight;
 	}
-	return (totalPayout / totalWeight);
+	if (it->second.cost <= 0.0)
+		return (0.0);
+	return (totalPayout / totalWeight / it->second.cost);
 }
 
 double	Distribution::getMeanPayout(const std::string &mode) const
@@ -243,9 +396,14 @@ std::string	Distribution::formatGameEvent(const GameEvent &event) const
 
 	json << "{\"index\":" << event.index;
 	json << ",\"type\":\"" << event.type << "\"";
-	json << ",\"multiplier\":" << std::fixed << std::setprecision(1)
-		 << event.multiplier;
-	json << ",\"amount\":" << event.amount << "}";
+	if (event.type == "reveal")
+		json << ",\"gameType\":\"" << event.gameType << "\"";
+	if (event.type == "winInfo")
+		json << ",\"totalWin\":" << event.totalWin;
+	if (event.type == "setWin")
+		json << ",\"winLevel\":" << event.winLevel;
+	json << ",\"amount\":" << event.amount;
+	json << "}";
 	return (json.str());
 }
 
@@ -255,6 +413,10 @@ std::string	Distribution::formatSimulation(const Simulation &sim) const
 
 	json << "{\"id\":" << sim.id;
 	json << ",\"payoutMultiplier\":" << sim.payoutMultiplier;
+	json << ",\"baseGameWins\":" << std::fixed << std::setprecision(3)
+		 << sim.baseGameWins;
+	json << ",\"freeGameWins\":" << std::fixed << std::setprecision(3)
+		 << sim.freeGameWins;
 	json << ",\"events\":[";
 	for (size_t i = 0; i < sim.events.size(); i++)
 	{

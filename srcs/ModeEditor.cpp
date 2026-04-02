@@ -5,9 +5,10 @@
 #include <algorithm>
 
 ModeEditor::ModeEditor(void)
-	: _numSimulations(100000), _exported(false), _isSimulating(false)
+	: _numSimulations(100000), _exported(false)
 {
 	strncpy(_outputDir, "output", sizeof(_outputDir));
+	strncpy(_configPath, "config.json", sizeof(_configPath));
 }
 
 ModeEditor::~ModeEditor(void)
@@ -29,6 +30,8 @@ void	ModeEditor::render(ModeManager &modeManager, GLFWwindow *window)
 	renderHeader();
 	ImGui::Separator();
 	renderSettings();
+	ImGui::Separator();
+	renderConfigActions(modeManager);
 	ImGui::Separator();
 	renderModesList(modeManager);
 	ImGui::Separator();
@@ -87,6 +90,8 @@ void	ModeEditor::renderModePanel(ModeEntry &mode, int index)
 
 		ImGui::Spacing();
 		renderMultipliersTable(mode);
+		ImGui::Spacing();
+		renderFreeSpinsConfig(mode);
 
 		ImGui::Unindent();
 	}
@@ -159,6 +164,94 @@ void	ModeEditor::renderMultipliersTable(ModeEntry &mode)
 	ImGui::Spacing();
 	if (ImGui::Button("+ Add Multiplier"))
 		mode.multipliers.push_back({0.0f, 100});
+}
+
+void	ModeEditor::renderFreeSpinsConfig(ModeEntry &mode)
+{
+	ImGui::PushID("freespins");
+
+	ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Free Spins");
+	ImGui::SameLine();
+	ImGui::Checkbox("##fsEnabled", &mode.freeSpins.enabled);
+
+	if (mode.freeSpins.enabled)
+	{
+		ImGui::Indent();
+
+		ImGui::Text("Trigger Weight:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragInt("##fsTrigger", &mode.freeSpins.triggerWeight,
+			1.0f, 1, 1000000);
+
+		// Show trigger probability
+		uint64_t	totalWeight = 0;
+		for (const auto &m : mode.multipliers)
+			totalWeight += m.weight;
+		totalWeight += mode.freeSpins.triggerWeight;
+		float	triggerProb = (mode.freeSpins.triggerWeight * 100.0f) / totalWeight;
+		ImGui::SameLine();
+		ImGui::TextDisabled("(%.2f%%)", triggerProb);
+
+		ImGui::Text("Spins Count:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragInt("##fsCount", &mode.freeSpins.count, 1.0f, 1, 100);
+
+		ImGui::Text("Multiplier Boost:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(100);
+		ImGui::DragFloat("##fsBoost", &mode.freeSpins.multiplierBoost,
+			0.1f, 1.0f, 20.0f, "%.1fx");
+
+		ImGui::Checkbox("Can Retrigger", &mode.freeSpins.canRetrigger);
+
+		ImGui::Unindent();
+	}
+
+	ImGui::PopID();
+}
+
+void	ModeEditor::renderConfigActions(ModeManager &modeManager)
+{
+	ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Configuration");
+	ImGui::Spacing();
+
+	ImGui::Text("File:");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(200);
+	ImGui::InputText("##configpath", _configPath, sizeof(_configPath));
+
+	ImGui::SameLine();
+	ImVec4	saveBtnColor = ImVec4(0.6f, 0.4f, 0.8f, 1.0f);
+	ImGui::PushStyleColor(ImGuiCol_Button, saveBtnColor);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+		ImVec4(0.7f, 0.5f, 0.9f, 1.0f));
+	if (ImGui::Button("Save", ImVec2(60, 0)))
+	{
+		if (modeManager.saveConfig(_configPath))
+			_statusMsg = "Config saved to " + std::string(_configPath);
+		else
+			_statusMsg = "Error: Failed to save config!";
+	}
+	ImGui::PopStyleColor(2);
+
+	ImGui::SameLine();
+	ImVec4	loadBtnColor = ImVec4(0.8f, 0.6f, 0.2f, 1.0f);
+	ImGui::PushStyleColor(ImGuiCol_Button, loadBtnColor);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+		ImVec4(0.9f, 0.7f, 0.3f, 1.0f));
+	if (ImGui::Button("Load", ImVec2(60, 0)))
+	{
+		if (modeManager.loadConfig(_configPath))
+			_statusMsg = "Config loaded from " + std::string(_configPath);
+		else
+			_statusMsg = "Error: Failed to load config!";
+		_exported = false;
+	}
+	ImGui::PopStyleColor(2);
+
+	ImGui::Spacing();
 }
 
 void	ModeEditor::renderSettings(void)
