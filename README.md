@@ -5,29 +5,23 @@
 
 ## Description
 
-Math SDK is a mathematical file generation tool for the JeanClaude StakeEngine. It allows you to create and simulate game modes with different multipliers and export the results for analysis.
+Math SDK is a high-performance mathematical file generation tool for the JeanClaude StakeEngine. It features a modern web-based graphical interface (Vue.js) powered by a native C++ backend (WebKit2GTK). It allows you to create, simulate, and analyze game modes with complex multiplier distributions and free spin mechanics.
 
-## Why C++ instead of Python?
+## Why C++ & WebViewer?
 
-The main advantage of this C++ implementation is **exceptional performance**:
-- **100,000 simulations** executed in milliseconds
-- Typical execution time: ~10-50ms depending on configuration
-- Performance 100x to 1000x superior to equivalent Python implementation
+- **Performance**: 100,000 simulations executed in milliseconds thanks to the C++17 engine.
+- **Modern UI**: A reactive and beautiful interface built with **Vue.js 3**, providing a much better UX than traditional desktop toolkits.
+- **Real-time**: Instant RTP (Return to Player) calculation and statistical feedback as you edit weights and values.
 
-This speed allows rapid iteration on configurations and testing multiple scenarios without waiting time.
+## Key Features
 
-## Current Features
-
-Currently, the tool supports:
-- ✅ Create game modes with different costs
-- ✅ Define multipliers with their respective weights
-- ✅ Generate random simulations (weighted distribution)
-- ✅ Automatically calculate RTP (Return to Player)
-- ✅ Advanced statistical analysis (variance, standard deviation, volatility, hit frequency)
-- ✅ Export results in CSV and compressed JSONL (zstd)
-- ✅ Command Line Interface (CLI)
-- ✅ Graphical User Interface (GUI) with ImGui
-- ✅ Dedicated statistics window for detailed analysis
+- ✅ **Dynamic Mode Editor**: Create and manage multiple game modes with custom costs.
+- ✅ **Multiplier Management**: Fine-tune multiplier values and their respective weights with real-time probability calculation.
+- ✅ **Free Spins Engine**: Configure trigger weights, spin counts, multiplier boosts, and retrigger logic.
+- ✅ **Real-time Simulations**: Run millions of iterations to validate your mathematical model.
+- ✅ **RTP Analytics**: Automatic calculation of expected RTP with visual health indicators.
+- ✅ **Persistence**: Import and Export your configurations in standard JSON format.
+- ✅ **Stake Engine Export**: One-click generation of CSV, compressed JSONL (zstd), and index files ready for engine integration.
 
 ## Prerequisites
 
@@ -35,194 +29,81 @@ Currently, the tool supports:
 - Make
 - System libraries:
   - `libzstd` (compression)
-  - `libglfw3` (for GUI version)
-  - `OpenGL` (for GUI version)
+  - `gtk+-3.0`
+  - `webkit2gtk-4.1`
 
-### Installing Dependencies
+### Installing Dependencies (Ubuntu/Debian)
 
-**Ubuntu/Debian:**
 ```bash
-sudo apt install build-essential libzstd-dev libglfw3-dev libgl1-mesa-dev
+sudo apt update
+sudo apt install build-essential pkg-config libzstd-dev libgtk-3-dev libwebkit2gtk-4.1-dev
 ```
 
-**Arch Linux:**
-```bash
-sudo pacman -S base-devel zstd glfw-x11
-```
+## Compilation & Execution
 
-## Compilation
-
-### CLI Version (command line)
+Build the application:
 ```bash
 make
 ```
 
-### GUI Version (graphical interface)
+Run the application:
 ```bash
-make gui
+./math-engine
 ```
 
-### Clean compiled files
+Clean compiled files:
 ```bash
 make clean      # Remove object files
-make fclean     # Remove everything (binaries + output)
-make re         # Recompile everything from scratch
+make fclean     # Remove binaries and temporary output
 ```
 
 ## Usage
 
-### CLI Version
+### 1. Game Modes
+Click **+ New Mode** to add a new game configuration. You can edit the name and cost directly.
 
-#### Run with default configuration
-```bash
-make run
-# or directly:
-./math-engine
-```
+### 2. Multipliers
+For each mode, add multipliers. Each row consists of:
+- **Value**: The multiplier value (e.g., 2.5 for 2.5x).
+- **Weight**: The relative weight in the distribution.
+The tool automatically calculates the **Prob %** for each entry.
 
-#### Modify configuration
+### 3. Free Spins
+Enable the Free Spins section to simulate bonus rounds. You can configure:
+- **Trigger Weight**: Probability of entering the bonus round.
+- **Spins Count**: Number of spins awarded.
+- **Multiplier Boost**: Extra multiplier applied during free spins.
+- **Retrigger**: Toggle if bonus rounds can award more spins.
 
-Edit the `main.cpp` file to customize:
+### 4. Simulations
+Set the **Simulations Count** (default 100,000) and click **▶ Run Simulations**. The tool will execute the math engine and update the **Expected RTP** for every mode.
 
-```cpp
-// Number of simulations
-numSimulations = 100000;
-
-// Create a game mode
-dist.addMode("base", 1.0);  // name, cost
-
-// Add multipliers (mode, multiplier, weight)
-dist.addMultiplier("base", 0.0, 350);   // 0x  - weight 350
-dist.addMultiplier("base", 0.5, 250);   // 0.5x - weight 250
-dist.addMultiplier("base", 1.0, 200);   // 1x  - weight 200
-dist.addMultiplier("base", 1.5, 120);   // 1.5x - weight 120
-dist.addMultiplier("base", 2.0, 80);    // 2x  - weight 80
-
-// Run simulations
-dist.runSimulations("base", numSimulations, 42);  // mode, count, seed
-
-// Export results
-dist.exportAll("output");
-```
-
-### GUI Version
-
-```bash
-make run-gui
-# or directly:
-./math-engine-gui
-```
-
-The graphical interface allows you to:
-- Create and edit modes visually
-- Add/remove multipliers
-- Run simulations in real-time
-- Visualize statistics (RTP, simulation count)
-- View detailed statistics in a dedicated window:
-  - Basic metrics (RTP, Mean Payout, Hit Frequency)
-  - Distribution metrics (Variance, Standard Deviation, Volatility)
-  - Payout range (Min/Max multipliers observed)
-  - Sample information (number of simulations)
-
-## Statistics Explained
-
-The Statistics Window displays comprehensive metrics for each game mode:
-
-### Basic Metrics
-- **RTP (Return to Player)**: Expected payout percentage (e.g., 95.50% means players get back 95.50 cents for every dollar wagered on average)
-- **Mean Payout**: Average multiplier value across all simulations
-- **Hit Frequency**: Percentage of non-zero payouts (winning probability)
-
-### Distribution Metrics
-- **Variance**: Measure of how spread out the payout values are
-- **Standard Deviation (Écart-Type)**: Square root of variance, shows consistency of payouts
-- **Volatility**: Ratio of standard deviation to mean (higher = more risk/reward variability)
-
-### Payout Range
-- **Min Payout**: Lowest multiplier observed in simulations
-- **Max Payout**: Highest multiplier observed in simulations
-
-### Sample Information
-- **Simulations**: Total number of simulations run for this mode
-
-## Generated Files
-
-Results are exported to the `output/` folder:
-
-### `index.json`
-Index file containing the list of all modes and their metadata:
-```json
-{
-  "modes": [
-    {
-      "name": "base",
-      "cost": 1.0,
-      "simulations": 100000,
-      "rtp": 0.95,
-      "files": {
-        "csv": "output/base.csv",
-        "jsonl": "output/base.jsonl.zst"
-      }
-    }
-  ]
-}
-```
-
-### `<mode>.csv`
-Uncompressed CSV file for quick analysis:
-```csv
-id,weight,payoutMultiplier
-0,350,0
-1,350,0
-2,250,500
-...
-```
-
-### `<mode>.jsonl.zst`
-JSONL file compressed with zstd (optimized for storage):
-```jsonl
-{"id":0,"weight":350,"payoutMultiplier":0}
-{"id":1,"weight":350,"payoutMultiplier":0}
-{"id":2,"weight":250,"payoutMultiplier":500}
-...
-```
+### 5. Import/Export
+- **💾 Save**: Save your current workspace to the specified JSON config path.
+- **📂 Import**: Load an existing JSON configuration file.
+- **🚀 Export for Stake Engine**: Generate all necessary assets in the **Output Directory**.
 
 ## Project Structure
 
 ```
 .
-├── main.cpp              # CLI entry point
-├── gui_main.cpp          # GUI entry point
-├── Makefile              # Build file
-├── includes/             # Headers (.hpp)
-│   ├── Distribution.hpp  # Main class
-│   ├── ModeManager.hpp   # Mode manager
-│   ├── ModeEditor.hpp    # Mode editor
-│   └── Windows/          # GUI windows
-│       ├── GuiWindow.hpp       # Main GUI window
-│       └── StatisticsWindow.hpp # Statistics window
-├── srcs/                 # Implementations (.cpp)
-│   ├── Distribution.cpp
-│   ├── ModeManager.cpp
-│   ├── ModeEditor.cpp
-│   └── Windows/          # GUI windows implementations
-│       ├── GuiWindow.cpp
-│       └── StatisticsWindow.cpp
-├── libs/                 # External libraries
-│   └── imgui/            # Dear ImGui (graphical interface)
-└── output/               # Generated results (created automatically)
+├── Makefile              # Build system
+├── includes/             # C++ Headers
+│   ├── webview.h         # Native WebViewer wrapper
+│   ├── AppBridge.hpp     # JS <-> C++ Bridge logic
+│   ├── ModeManager.hpp   # Business logic manager
+│   └── Distribution.hpp  # Math engine core
+├── srcs/                 # C++ Source files
+│   ├── main.cpp          # Entry point
+│   ├── AppBridge.cpp     # Bridge implementation
+│   ├── ModeManager.cpp   
+│   └── Distribution.cpp
+├── frontend/             # Web UI
+│   ├── index.html        # Main structure
+│   ├── app.js            # Vue.js logic & IPC bridge
+│   └── style.css         # Modern dark theme
+└── output/               # Generated engine files
 ```
-
-## Roadmap
-
-Upcoming features:
-- [ ] Import/export JSON configurations
-- [x] Advanced statistical analysis (variance, standard deviation, volatility, hit frequency)
-- [x] Statistics visualization window in GUI
-- [ ] Automatic RTP validation
-- [ ] Batch mode to test multiple configurations
-- [ ] Tools for creating slot games
-- [ ] Tools for creating board games
 
 ## License
 
