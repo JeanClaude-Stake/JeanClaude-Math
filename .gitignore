@@ -3,3 +3,4 @@ objs/
 .vscode/
 *.json
 *.png
+math-engine.exe.WebView2
