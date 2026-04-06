@@ -2,120 +2,316 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>MathSDK UI</title>
+    <title>Math SDK</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
-    <div id="app" class="grid">
-        <!-- Settings Panel -->
-        <aside class="card">
-            <h2>Global Settings</h2>
-            <div class="input-group">
-                <label>Simulations Count</label>
-                <input v-model.number="sims" type="number">
+<div id="app">
+
+    <!-- Ambient background blobs -->
+    <div class="ambient-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- ── Top Bar ─────────────────────────── -->
+    <nav class="topbar">
+        <div class="topbar-logo">
+            <div class="logo-icon">◈</div>
+            <span>Math<span class="logo-accent">SDK</span></span>
+        </div>
+
+        <div class="topbar-status" v-if="statusMessage" :class="`status-${statusType}`">
+            {{ statusMessage }}
+        </div>
+
+        <div class="topbar-actions">
+            <button class="btn-pill btn-action" @click="importWithPicker" title="Open a config file">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Import
+            </button>
+            <button class="btn-pill btn-action" @click="saveWithPicker" title="Save config to a file">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save
+            </button>
+            <button class="btn-pill btn-export" @click="exportWithPicker" title="Export to Stake Engine">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Export
+            </button>
+            <button class="btn-pill btn-run" :class="{running: isRunning}" @click="runSims">
+                <span v-if="!isRunning">▶ Run Simulations</span>
+                <span v-else>⏳ Running…</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ── 3-column layout ─────────────────── -->
+    <div class="content-grid">
+
+        <!-- ── Left Sidebar ─────────────────── -->
+        <aside class="sidebar">
+
+            <!-- Simulation settings -->
+            <div class="panel-card">
+                <div class="panel-title">Simulation</div>
+                <div class="form-group">
+                    <label>Iterations</label>
+                    <div class="input-stepper">
+                        <button @click="sims = Math.max(1000, sims - 10000)">−</button>
+                        <input v-model.number="sims" type="number">
+                        <button @click="sims += 10000">+</button>
+                    </div>
+                </div>
+                <div class="sim-presets">
+                    <button class="preset-btn" v-for="p in [10000, 100000, 1000000]" :key="p"
+                            :class="{active: sims === p}" @click="sims = p">{{ formatCount(p) }}</button>
+                </div>
             </div>
-            <div class="input-group">
-                <label>Config Path</label>
-                <input v-model="configPath" type="text">
+
+
+            <!-- Modes overview list -->
+            <div class="panel-card" v-if="modes.length">
+                <div class="panel-title">Modes Overview</div>
+                <div class="mode-pill"
+                     v-for="(mode, i) in modes" :key="i"
+                     :class="{active: selectedModeIdx === i, simulated: mode.simulated}"
+                     @click="selectedModeIdx = i">
+                    <span class="mode-pill-name">{{ mode.name || 'Unnamed' }}</span>
+                    <span v-if="mode.simulated" class="mode-pill-rtp" :class="{low: mode.rtp < 0.9}">
+                        {{ (mode.rtp * 100).toFixed(1) }}%
+                    </span>
+                </div>
             </div>
-            <div class="input-group">
-                <label>Output Directory</label>
-                <input v-model="outputDir" type="text">
-            </div>
-            <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
-            <button class="btn btn-success" @click="runSims" style="width:100%">▶ Run Simulations</button>
-            <div style="display:flex;">
-                <button class="btn btn-primary" style="flex:1;" @click="invoke('save', configPath)">💾 Save</button>
-                <button class="btn btn-warning" style="flex:1;" @click="invoke('load', configPath)">📂 Import</button>
-            </div>
-            <button class="btn" style="background:#9b59b6; color:white; width:100%" @click="invoke('export', outputDir)">🚀 Export for Stake Engine</button>
-            <button class="btn" style="background:#555; width:100%" @click="refresh">🔄 Refresh Data</button>
+
         </aside>
 
-        <!-- Main Editor -->
-        <main>
-            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>Game Modes ({{ modes.length }})</h2>
-                <button class="btn btn-primary" @click="addMode">+ New Mode</button>
+        <!-- ── Main Editor ───────────────────── -->
+        <main class="editor">
+            <div class="editor-header">
+                <h2>Game Modes <span class="count-badge">{{ modes.length }}</span></h2>
+                <button class="btn-pill btn-primary" @click="addMode">+ New Mode</button>
             </div>
 
-            <div v-for="(mode, idx) in modes" :key="idx" class="card mode-card">
-                <div style="display:flex; justify-content:space-between;">
-                    <div style="flex:1;">
-                        <div style="display:flex; gap:10px; margin-bottom:15px;">
-                            <div style="flex:2;">
-                                <label>Mode Name</label>
-                                <input v-model="mode.name" @change="updateModeName(idx)">
-                            </div>
-                            <div style="flex:1;">
-                                <label>Cost</label>
-                                <input v-model.number="mode.cost" type="number" @change="updateModeCost(idx)">
-                            </div>
+            <div v-for="(mode, idx) in modes" :key="idx"
+                 class="mode-card panel-card"
+                 :class="{selected: selectedModeIdx === idx}"
+                 @click="selectedModeIdx = idx">
+
+                <!-- Header row -->
+                <div class="mode-card-header">
+                    <div class="mode-name-row">
+                        <div class="form-group inline">
+                            <label>Name</label>
+                            <input v-model="mode.name" @change="updateModeName(idx)"
+                                   class="input-field input-name" @click.stop>
+                        </div>
+                        <div class="form-group inline narrow">
+                            <label>Cost</label>
+                            <input v-model.number="mode.cost" type="number"
+                                   @change="updateModeCost(idx)" class="input-field" @click.stop>
                         </div>
                     </div>
-                    <button class="btn btn-danger" @click="removeMode(idx)">🗑</button>
-                </div>
-
-                <div style="display:flex; align-items:center;">
-                    <h3>Multipliers</h3>
-                    <span v-if="mode.simulated" class="badge badge-sim">Simulated</span>
-                    <span v-else class="badge badge-nosim">Not Simulated</span>
-                </div>
-                
-                <table class="multiplier-table">
-                    <thead>
-                        <tr>
-                            <th>Value (x)</th>
-                            <th>Weight</th>
-                            <th>Prob %</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(m, mIdx) in mode.multipliers" :key="mIdx">
-                            <td><input v-model.number="m.m" type="number" step="0.1" @change="updateMultiplier(idx, mIdx)"></td>
-                            <td><input v-model.number="m.w" type="number" @change="updateMultiplier(idx, mIdx)"></td>
-                            <td style="color:#888;">{{ calculateProb(mode, mIdx) }}%</td>
-                            <td><button class="btn btn-danger" @click="removeMultiplier(idx, mIdx)" style="padding:2px 8px;">×</button></td>
-                        </tr>
-                    </tbody>
-                </table>
-                <button class="btn" style="background:#333" @click="addMultiplier(idx)">+ Add Multiplier</button>
-
-                <div class="fs-section">
-                    <div style="display:flex; align-items:center; margin-bottom:10px;">
-                        <h3 style="margin:0; color:#f39c12;">Free Spins</h3>
-                        <input type="checkbox" v-model="mode.freeSpins.enabled" @change="updateFreeSpins(idx)" style="margin-left:15px;">
-                        <span style="font-size:0.8em; color:#888;">{{ mode.freeSpins.enabled ? 'Enabled' : 'Disabled' }}</span>
+                    <div class="mode-badges">
+                        <span class="badge" :class="mode.simulated ? 'badge-sim' : 'badge-nosim'">
+                            {{ mode.simulated ? 'Simulated' : 'Pending' }}
+                        </span>
+                        <span v-if="mode.simulated" class="badge"
+                              :class="mode.rtp >= 0.95 ? 'badge-success' : 'badge-warn'">
+                            {{ (mode.rtp * 100).toFixed(2) }}%
+                        </span>
+                        <button class="btn-icon btn-danger" @click.stop="removeMode(idx)" title="Delete mode">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
+                            </svg>
+                        </button>
                     </div>
-                    
-                    <div v-if="mode.freeSpins.enabled" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;">
-                        <div class="input-group">
+                </div>
+
+                <!-- Multipliers -->
+                <div class="section-header">
+                    <span class="section-label">Multipliers</span>
+                    <button class="btn-mini" @click.stop="addMultiplier(idx)">+ Add</button>
+                </div>
+                <div class="mult-table">
+                    <div class="mult-thead">
+                        <span>Value (×)</span><span>Weight</span><span>Prob</span><span></span>
+                    </div>
+                    <div class="mult-row" v-for="(m, mIdx) in mode.multipliers" :key="mIdx">
+                        <input v-model.number="m.m" type="number" step="0.1"
+                               @change="updateMultiplier(idx, mIdx)" @click.stop class="input-mini">
+                        <input v-model.number="m.w" type="number"
+                               @change="updateMultiplier(idx, mIdx)" @click.stop class="input-mini">
+                        <span class="prob-text">{{ calculateProb(mode, mIdx) }}%</span>
+                        <button class="btn-remove" @click.stop="removeMultiplier(idx, mIdx)">×</button>
+                    </div>
+                </div>
+
+                <!-- Free Spins -->
+                <div class="fs-card">
+                    <div class="fs-header" @click.stop>
+                        <span class="section-label"
+                              :style="{color: mode.freeSpins.enabled ? '#FF9F0A' : ''}">
+                            Free Spins
+                        </span>
+                        <div class="toggle-switch" :class="{on: mode.freeSpins.enabled}"
+                             @click="mode.freeSpins.enabled = !mode.freeSpins.enabled; updateFreeSpins(idx)">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                    <div v-if="mode.freeSpins.enabled" class="fs-grid" @click.stop>
+                        <div class="form-group">
                             <label>Trigger Weight</label>
-                            <input v-model.number="mode.freeSpins.triggerWeight" type="number" @change="updateFreeSpins(idx)">
+                            <input v-model.number="mode.freeSpins.triggerWeight" type="number"
+                                   @change="updateFreeSpins(idx)" class="input-field">
                         </div>
-                        <div class="input-group">
+                        <div class="form-group">
                             <label>Spins Count</label>
-                            <input v-model.number="mode.freeSpins.count" type="number" @change="updateFreeSpins(idx)">
+                            <input v-model.number="mode.freeSpins.count" type="number"
+                                   @change="updateFreeSpins(idx)" class="input-field">
                         </div>
-                        <div class="input-group">
-                            <label>Multiplier Boost (x)</label>
-                            <input v-model.number="mode.freeSpins.multiplierBoost" type="number" step="0.1" @change="updateFreeSpins(idx)">
+                        <div class="form-group">
+                            <label>Multiplier Boost</label>
+                            <input v-model.number="mode.freeSpins.multiplierBoost" type="number" step="0.1"
+                                   @change="updateFreeSpins(idx)" class="input-field">
                         </div>
-                        <div style="display:flex; align-items:center;">
-                            <input type="checkbox" v-model="mode.freeSpins.canRetrigger" @change="updateFreeSpins(idx)">
-                            <label style="display:inline; margin:0;">Can Retrigger</label>
+                        <div class="form-group toggle-group">
+                            <label>Can Retrigger</label>
+                            <div class="toggle-switch sm"
+                                 :class="{on: mode.freeSpins.canRetrigger}"
+                                 @click="mode.freeSpins.canRetrigger = !mode.freeSpins.canRetrigger; updateFreeSpins(idx)">
+                                <div class="toggle-knob"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="stats" v-if="mode.rtp !== undefined" style="margin-top:20px; border-top:1px solid #333; padding-top:10px;">
-                    <span>Expected RTP: <b :class="mode.rtp > 0.95 ? 'rtp-high' : 'rtp-low'">{{ (mode.rtp * 100).toFixed(2) }}%</b></span>
-                </div>
-            </div>
+            </div><!-- /mode-card -->
         </main>
-    </div>
-    <script src="app.js"></script>
+
+        <!-- ── Stats Panel ───────────────────── -->
+        <aside class="stats-panel">
+            <div class="stats-header">
+                <h2>Analytics</h2>
+            </div>
+
+            <!-- Empty state -->
+            <div v-if="!selectedMode || !selectedMode.simulated" class="stats-empty">
+                <div class="empty-icon">◎</div>
+                <p>Run simulations to<br>view analytics</p>
+            </div>
+
+            <template v-else>
+
+                <!-- Mode tabs -->
+                <div class="mode-tabs" v-if="modes.length > 1">
+                    <button v-for="(m, i) in modes" :key="i"
+                            class="mode-tab" :class="{active: selectedModeIdx === i}"
+                            @click="selectedModeIdx = i">
+                        {{ m.name || ('Mode ' + i) }}
+                    </button>
+                </div>
+
+                <!-- RTP Value -->
+                <div class="stat-card">
+                    <div class="stat-card-label">Return to Player</div>
+                    <div class="rtp-value-display">
+                        <span class="rtp-big" :style="{color: rtpGaugeColor}">
+                            {{ (selectedMode.rtp * 100).toFixed(2) }}%
+                        </span>
+                        <span class="rtp-sub" :style="{color: rtpGaugeColor}">
+                            {{ selectedMode.rtp >= 0.97 ? 'Excellent' : selectedMode.rtp >= 0.94 ? 'Good' : selectedMode.rtp >= 0.88 ? 'Low' : 'Critical' }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Volatility -->
+                <div class="stat-card" v-if="selectedMode.stats && selectedMode.stats.calculated">
+                    <div class="stat-card-label">Volatility</div>
+                    <div class="volatility-display">
+                        <span class="vol-value" :style="{color: volatilityColor}">{{ volatilityLabel }}</span>
+                        <div class="vol-meter">
+                            <div v-for="n in 5" :key="n" class="vol-seg"
+                                 :style="{backgroundColor: n <= volatilityLevel
+                                     ? volatilityColor
+                                     : 'rgba(255,255,255,0.07)'}">
+                            </div>
+                        </div>
+                        <span class="vol-number">σ/μ = {{ selectedMode.stats.volatility.toFixed(4) }}</span>
+                    </div>
+                </div>
+
+                <!-- Key metrics grid -->
+                <div class="stat-card" v-if="selectedMode.stats && selectedMode.stats.calculated">
+                    <div class="stat-card-label">Key Metrics</div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <span class="metric-label">Hit Freq</span>
+                            <span class="metric-value c-blue">{{ selectedMode.stats.hitFrequency.toFixed(1) }}%</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Mean Win</span>
+                            <span class="metric-value">{{ selectedMode.stats.meanPayout.toFixed(2) }}×</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Max Win</span>
+                            <span class="metric-value c-green">{{ selectedMode.stats.maxPayout.toFixed(1) }}×</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Min Win</span>
+                            <span class="metric-value c-orange">{{ selectedMode.stats.minPayout.toFixed(1) }}×</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Std Dev</span>
+                            <span class="metric-value c-purple">{{ selectedMode.stats.stdDeviation.toFixed(3) }}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Variance</span>
+                            <span class="metric-value">{{ selectedMode.stats.variance.toFixed(3) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hit frequency bar -->
+                <div class="stat-card" v-if="selectedMode.stats && selectedMode.stats.calculated">
+                    <div class="stat-card-label">Hit Frequency</div>
+                    <div class="freq-bar-track">
+                        <div class="freq-bar-fill"
+                             :style="{width: Math.min(100, selectedMode.stats.hitFrequency) + '%'}">
+                        </div>
+                    </div>
+                    <div class="freq-labels">
+                        <span>0%</span>
+                        <span class="freq-center">{{ selectedMode.stats.hitFrequency.toFixed(2) }}%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <!-- Distribution chart -->
+                <div class="stat-card">
+                    <div class="stat-card-label">Payout Distribution</div>
+                    <div class="dist-chart">
+                        <div v-for="m in sortedMultipliers" :key="m.m" class="dist-row">
+                            <span class="dist-mult">{{ m.m }}×</span>
+                            <div class="dist-bar-track">
+                                <div class="dist-bar-fill"
+                                     :style="{
+                                         width: getBarWidth(m) + '%',
+                                         backgroundColor: barColor(m.m)
+                                     }">
+                                </div>
+                            </div>
+                            <span class="dist-prob-label">{{ getProb(m) }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+            </template>
+        </aside>
+
+    </div><!-- /content-grid -->
+</div><!-- /app -->
+<script src="app.js"></script>
 </body>
 </html>

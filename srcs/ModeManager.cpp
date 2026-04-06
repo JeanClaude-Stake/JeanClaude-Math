@@ -3,7 +3,13 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
-#include <sys/stat.h>
+#ifdef _WIN32
+#  include <direct.h>   // _mkdir
+#  define MAKE_DIR(p) _mkdir(p)
+#else
+#  include <sys/stat.h>
+#  define MAKE_DIR(p) mkdir(p, 0755)
+#endif
 
 ModeManager::ModeManager(void)
 {
@@ -81,7 +87,7 @@ bool	ModeManager::exportFiles(const char *outputDir)
 {
 	if (_dist.modeCount() == 0)
 		return (false);
-	mkdir(outputDir, 0755);
+	MAKE_DIR(outputDir);
 	return (_dist.exportAll(outputDir));
 }
 
@@ -250,7 +256,11 @@ bool	ModeManager::loadConfig(const char *path)
 
 		ModeEntry	mode;
 		std::string	name = extractString(modeJson, "name");
+#ifdef _WIN32
+		strncpy_s(mode.name, sizeof(mode.name), name.c_str(), sizeof(mode.name) - 1);
+#else
 		strncpy(mode.name, name.c_str(), sizeof(mode.name) - 1);
+#endif
 		mode.name[sizeof(mode.name) - 1] = '\0';
 		mode.cost = static_cast<float>(extractNumber(modeJson, "cost"));
 		mode.simulated = false;
