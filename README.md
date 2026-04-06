@@ -5,13 +5,16 @@
 
 ## Description
 
-Math SDK is a high-performance mathematical file generation tool for the JeanClaude StakeEngine. It features a modern web-based graphical interface (Vue.js) powered by a native C++ backend (WebKit2GTK). It allows you to create, simulate, and analyze game modes with complex multiplier distributions and free spin mechanics.
+Math SDK is a high-performance mathematical file generation tool for the JeanClaude StakeEngine. It features a modern web-based graphical interface (Vue.js 3) powered by a native C++ backend. 
+
+The application is cross-platform, using **WebKit2GTK** on Linux and **Microsoft WebView2 (Edge)** on Windows to provide a seamless desktop experience with a reactive web UI.
 
 ## Why C++ & WebViewer?
 
 - **Performance**: 100,000 simulations executed in milliseconds thanks to the C++17 engine.
 - **Modern UI**: A reactive and beautiful interface built with **Vue.js 3**, providing a much better UX than traditional desktop toolkits.
 - **Real-time**: Instant RTP (Return to Player) calculation and statistical feedback as you edit weights and values.
+- **Cross-Platform**: Native performance and look-and-feel on both Linux and Windows.
 
 ## Key Features
 
@@ -19,77 +22,78 @@ Math SDK is a high-performance mathematical file generation tool for the JeanCla
 - ✅ **Multiplier Management**: Fine-tune multiplier values and their respective weights with real-time probability calculation.
 - ✅ **Free Spins Engine**: Configure trigger weights, spin counts, multiplier boosts, and retrigger logic.
 - ✅ **Real-time Simulations**: Run millions of iterations to validate your mathematical model.
-- ✅ **RTP Analytics**: Automatic calculation of expected RTP with visual health indicators.
+- ✅ **RTP & Volatility Analytics**: Automatic calculation of expected RTP, volatility index, hit frequency, variance, and payout distribution.
 - ✅ **Persistence**: Import and Export your configurations in standard JSON format.
 - ✅ **Stake Engine Export**: One-click generation of CSV, compressed JSONL (zstd), and index files ready for engine integration.
 
 ## Prerequisites
 
-- C++ compiler supporting C++17 (g++, clang++)
-- Make
+### Linux (Ubuntu/Debian)
+
+- C++ compiler supporting C++17 (`g++` or `clang++`)
+- `make`
 - System libraries:
   - `libzstd` (compression)
   - `gtk+-3.0`
-  - `webkit2gtk-4.1`
-
-### Installing Dependencies (Ubuntu/Debian)
+  - `webkit2gtk-4.1` (or 4.0)
 
 ```bash
 sudo apt update
 sudo apt install build-essential pkg-config libzstd-dev libgtk-3-dev libwebkit2gtk-4.1-dev
 ```
 
-## Compilation & Execution
+### Windows
 
-Build the application:
+- **Visual Studio 2019+** or **Build Tools for Visual Studio** (with C++ Desktop development workload).
+- **LLVM/Clang** (recommended for best compatibility with the Makefile).
+- **Make for Windows** (available via Chocolatey, Scoop, or MSYS2).
+- **Important**: You **must** run the PowerShell setup script once to install the required libraries (`WebView2` and `zstd`) before building.
+
+## Setup & Compilation
+
+### 1. Windows Dependency Setup (Mandatory)
+Before the first build on Windows, you must download the required SDKs by running:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File setup-windows.ps1
+```
+*(This will download and extract WebView2 and zstd into the `libs/` folder).*
+
+### 2. Build the Application
+
+**On Linux:**
 ```bash
 make
 ```
 
-Run the application:
+**On Windows:**
+Do **not** use `make` directly. Use the provided batch script which correctly initializes the MSVC environment:
+```cmd
+build.bat
+```
+
+### 3. Running
+
 ```bash
+# Linux
 ./math-engine
+
+# Windows
+math-engine.exe
 ```
-
-Clean compiled files:
-```bash
-make clean      # Remove object files
-make fclean     # Remove binaries and temporary output
-```
-
-## Usage
-
-### 1. Game Modes
-Click **+ New Mode** to add a new game configuration. You can edit the name and cost directly.
-
-### 2. Multipliers
-For each mode, add multipliers. Each row consists of:
-- **Value**: The multiplier value (e.g., 2.5 for 2.5x).
-- **Weight**: The relative weight in the distribution.
-The tool automatically calculates the **Prob %** for each entry.
-
-### 3. Free Spins
-Enable the Free Spins section to simulate bonus rounds. You can configure:
-- **Trigger Weight**: Probability of entering the bonus round.
-- **Spins Count**: Number of spins awarded.
-- **Multiplier Boost**: Extra multiplier applied during free spins.
-- **Retrigger**: Toggle if bonus rounds can award more spins.
-
-### 4. Simulations
-Set the **Simulations Count** (default 100,000) and click **▶ Run Simulations**. The tool will execute the math engine and update the **Expected RTP** for every mode.
-
-### 5. Import/Export
-- **💾 Save**: Save your current workspace to the specified JSON config path.
-- **📂 Import**: Load an existing JSON configuration file.
-- **🚀 Export for Stake Engine**: Generate all necessary assets in the **Output Directory**.
 
 ## Project Structure
 
 ```
 .
-├── Makefile              # Build system
+├── Makefile              # Cross-platform build system
+├── build.bat             # Windows build wrapper (vcvarsall + make)
+├── setup-windows.ps1     # Windows dependency downloader
+├── libs/                 # [Windows only] Compiled libraries & headers
+│   ├── webview2/         # Microsoft Edge WebView2 SDK
+│   └── zstd/             # Zstd compression library
 ├── includes/             # C++ Headers
-│   ├── webview.h         # Native WebViewer wrapper
+│   ├── webview.h         # Cross-platform WebViewer wrapper
 │   ├── AppBridge.hpp     # JS <-> C++ Bridge logic
 │   ├── ModeManager.hpp   # Business logic manager
 │   └── Distribution.hpp  # Math engine core
@@ -97,8 +101,9 @@ Set the **Simulations Count** (default 100,000) and click **▶ Run Simulations*
 │   ├── main.cpp          # Entry point
 │   ├── AppBridge.cpp     # Bridge implementation
 │   ├── ModeManager.cpp   
-│   └── Distribution.cpp
-├── frontend/             # Web UI
+│   ├── Distribution.cpp
+│   └── win_stubs.cpp     # Windows-specific entry point logic
+├── frontend/             # Web UI (Vue.js 3)
 │   ├── index.html        # Main structure
 │   ├── app.js            # Vue.js logic & IPC bridge
 │   └── style.css         # Modern dark theme
