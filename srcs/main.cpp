@@ -13,6 +13,9 @@
 #else
 #  include <unistd.h>
 #  include <climits>
+#  ifdef __APPLE__
+#    include <mach-o/dyld.h>
+#  endif
 #endif
 
 static std::string getExeDir() {
@@ -23,6 +26,14 @@ static std::string getExeDir() {
     size_t pos = s.rfind('\\');
     if (pos != std::string::npos) s = s.substr(0, pos);
     for (char& c : s) if (c == '\\') c = '/';
+    return s;
+#elif defined(__APPLE__)
+    char buf[PATH_MAX];
+    uint32_t size = sizeof(buf);
+    if (_NSGetExecutablePath(buf, &size) != 0) return ".";
+    std::string s(buf);
+    size_t pos = s.rfind('/');
+    if (pos != std::string::npos) s = s.substr(0, pos);
     return s;
 #else
     char buf[PATH_MAX] = {};

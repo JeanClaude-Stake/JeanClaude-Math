@@ -263,12 +263,38 @@ private:
 } // namespace webview
 
 /* ═══════════════════════════════════════════════════════════════════
+   macOS implementation — Cocoa + WebKit
+   ═══════════════════════════════════════════════════════════════════ */
+#elif defined(__APPLE__)
+
+namespace webview {
+    class webview {
+    public:
+        webview(bool debug, void* window);
+        void bind(const std::string& name, std::function<std::string(std::string)> fn);
+        void set_title(const std::string& title);
+        void set_size(int width, int height, int hint);
+        void navigate(const std::string& url);
+        void run();
+        void resolve(const std::string& json);
+        void dispatch(const std::string& s);
+
+    private:
+        void* window_;
+        void* webview_;
+        void* delegate_;
+        std::map<std::string, std::function<std::string(std::string)>> bindings_;
+    };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Linux implementation — GTK3 + WebKit2GTK  (unchanged)
    ═══════════════════════════════════════════════════════════════════ */
 #else
 
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
+#include <iostream>
 
 namespace webview {
     class webview {
@@ -355,19 +381,21 @@ namespace webview {
                 size_t fn_key = s.find("\"fn\":\"");
                 if (fn_key != std::string::npos) {
                     size_t start = fn_key + 6, end = s.find('"', start);
-                    fn = s.substr(start, end - start);
+                    if (end != std::string::npos) fn = s.substr(start, end - start);
                 }
                 size_t arg_key = s.find("\"arg\":");
                 if (arg_key != std::string::npos) {
                     size_t start = arg_key + 6;
                     while (start < s.length() && s[start] == ' ') start++;
-                    if (s[start] == '"') {
-                        start++;
-                        size_t end = s.find('"', start);
-                        arg = s.substr(start, end - start);
-                    } else {
-                        size_t end = s.find_first_of(",}", start);
-                        arg = s.substr(start, end - start);
+                    if (start < s.length()) {
+                        if (s[start] == '"') {
+                            start++;
+                            size_t end = s.find('"', start);
+                            if (end != std::string::npos) arg = s.substr(start, end - start);
+                        } else {
+                            size_t end = s.find_first_of(",}", start);
+                            arg = s.substr(start, end - start);
+                        }
                     }
                 }
 
@@ -383,7 +411,7 @@ namespace webview {
     };
 }
 
-#endif // _WIN32
+#endif // _WIN32 / __APPLE__ / Linux
 
 #define WEBVIEW_HINT_NONE 0
 #endif // WEBVIEW_H

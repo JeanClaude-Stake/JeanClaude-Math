@@ -3,6 +3,16 @@ NAME = math-engine
 # ── OS detection ────────────────────────────────────────────────────
 ifeq ($(OS),Windows_NT)
   PLATFORM   = windows
+else
+  UNAME_S := $(shell uname -s)
+  ifeq ($(UNAME_S),Darwin)
+    PLATFORM = macos
+  else
+    PLATFORM = linux
+  endif
+endif
+
+ifeq ($(PLATFORM),windows)
   CXX        = clang++
   BIN        = $(NAME).exe
   MKDIR      = if not exist $(OBJS_DIR) mkdir $(OBJS_DIR)
@@ -11,6 +21,15 @@ ifeq ($(OS),Windows_NT)
   RM_OUTPUT  = if exist output rmdir /s /q output
   RUN_CMD    = $(BIN)
   NULL_DEV   = NUL
+else ifeq ($(PLATFORM),macos)
+  CXX        = clang++
+  BIN        = $(NAME)
+  MKDIR      = mkdir -p $(OBJS_DIR)
+  RM         = rm -rf $(OBJS_DIR)
+  RM_FILE    = rm -f $(BIN)
+  RM_OUTPUT  = rm -rf output
+  RUN_CMD    = ./$(BIN)
+  NULL_DEV   = /dev/null
 else
   PLATFORM   = linux
   CXX        = c++
@@ -66,6 +85,17 @@ ifeq ($(PLATFORM),windows)
     -luser32 -lgdi32 -lkernel32 \
     -mwindows
 
+else ifeq ($(PLATFORM),macos)
+
+  # ----------------------------------------------------------------
+  # macOS — Cocoa + WebKit + zstd
+  # ----------------------------------------------------------------
+  # Note: zstd is expected to be installed (e.g., via homebrew)
+  # or present in library search paths.
+
+  CXXFLAGS_PLATFORM = -DWEBVIEW_COCOA -x objective-c++ -I /opt/homebrew/include
+  LIBS_PLATFORM     = -L /opt/homebrew/lib -lzstd -framework WebKit -framework Cocoa
+
 else
 
   # ----------------------------------------------------------------
@@ -97,12 +127,15 @@ SRCS     = $(SRCS_DIR)/main.cpp \
 
 ifeq ($(PLATFORM),windows)
   SRCS += $(SRCS_DIR)/win_stubs.cpp
+else ifeq ($(PLATFORM),macos)
+  SRCS += $(SRCS_DIR)/webview.mm
 endif
 
 OBJS_DIR  = objs
 OBJS_CPP  = $(patsubst $(SRCS_DIR)/%.cpp,$(OBJS_DIR)/%.o,$(filter %.cpp,$(SRCS)))
 OBJS_C    = $(patsubst $(SRCS_DIR)/%.c,$(OBJS_DIR)/%.o,$(filter %.c,$(SRCS)))
-OBJS      = $(OBJS_CPP) $(OBJS_C)
+OBJS_MM   = $(patsubst $(SRCS_DIR)/%.mm,$(OBJS_DIR)/%.o,$(filter %.mm,$(SRCS)))
+OBJS      = $(OBJS_CPP) $(OBJS_C) $(OBJS_MM)
 
 # ── Rules ─────────────────────────────────────────────────────────────
 all: $(BIN)
@@ -118,6 +151,10 @@ $(OBJS_DIR)/%.o: $(SRCS_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJS_DIR)/%.o: $(SRCS_DIR)/%.c
+	@$(MKDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJS_DIR)/%.o: $(SRCS_DIR)/%.mm
 	@$(MKDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

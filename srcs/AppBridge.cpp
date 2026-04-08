@@ -149,7 +149,41 @@ static std::string winPickFolder() {
     return result;
 }
 
-#else  // Linux — GTK file chooser
+#elif defined(__APPLE__)
+
+#import <Cocoa/Cocoa.h>
+
+static std::string macPickFile(bool isSave) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    if (isSave) {
+        NSSavePanel* panel = [NSSavePanel savePanel];
+        panel.allowedFileTypes = @[@"json"];
+        if ([panel runModal] == NSModalResponseOK) {
+            return [[[panel URL] path] UTF8String];
+        }
+    } else {
+        NSOpenPanel* panel = [NSOpenPanel openPanel];
+        panel.allowedFileTypes = @[@"json"];
+        if ([panel runModal] == NSModalResponseOK) {
+            return [[[panel URL] path] UTF8String];
+        }
+    }
+#pragma clang diagnostic pop
+    return "";
+}
+
+static std::string macPickFolder() {
+    NSOpenPanel* panel = [NSOpenPanel openPanel];
+    [panel setCanChooseFiles:NO];
+    [panel setCanChooseDirectories:YES];
+    if ([panel runModal] == NSModalResponseOK) {
+        return [[[panel URL] path] UTF8String];
+    }
+    return "";
+}
+
+#elif defined(__linux__)  // Linux — GTK file chooser
 
 #  include <gtk/gtk.h>
 
@@ -205,7 +239,7 @@ static std::string gtkPickFolder() {
     return result;
 }
 
-#endif // _WIN32
+#endif // _WIN32 / __APPLE__ / __linux__
 
 // ── Binding registration ────────────────────────────────────────────
 
@@ -315,6 +349,8 @@ void AppBridge::registerBindings(webview::webview& w) {
         bool isSave = (mode == "save");
 #ifdef _WIN32
         std::string path = winPickFile(isSave);
+#elif defined(__APPLE__)
+        std::string path = macPickFile(isSave);
 #else
         std::string path = gtkPickFile(isSave);
 #endif
@@ -325,6 +361,8 @@ void AppBridge::registerBindings(webview::webview& w) {
     w.bind("browseOutput", [](std::string const&) -> std::string {
 #ifdef _WIN32
         std::string path = winPickFolder();
+#elif defined(__APPLE__)
+        std::string path = macPickFolder();
 #else
         std::string path = gtkPickFolder();
 #endif
