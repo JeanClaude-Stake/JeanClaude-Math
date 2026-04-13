@@ -85,7 +85,7 @@ uint64_t	Distribution::pickMultiplier(const GameMode &mode,
 	{
 		cumulative += mode.multipliers[i].weight;
 		if (roll < cumulative)
-			return (static_cast<uint64_t>(mode.multipliers[i].multiplier * 100));
+			return (static_cast<uint64_t>(std::llround(mode.multipliers[i].multiplier * 100)));
 	}
 	return (0);
 }

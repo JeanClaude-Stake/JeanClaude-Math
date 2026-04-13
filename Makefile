@@ -22,7 +22,7 @@ ifeq ($(PLATFORM),windows)
   RUN_CMD    = $(BIN)
   NULL_DEV   = NUL
 else ifeq ($(PLATFORM),macos)
-  CXX        = clang++
+  CXX        = c++
   BIN        = $(NAME)
   MKDIR      = mkdir -p $(OBJS_DIR)
   RM         = rm -rf $(OBJS_DIR)
